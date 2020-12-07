@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Version>1.0.0</Version>
-    <Description>A easy to use, simple yet feature-rich open-source framework for writing middlewares in the form of a low resource footnote Windows services or Linux Daemons.
+    <Description>An easy to use, simple yet feature-rich open-source framework for writing middlewares in the form of a low resource footnote Windows services or Linux Daemons.
 Takes care of craceful multi-threaded service granular scheduling, shutdowns, restarts, error recovery.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/H7O/Com.H.Threading</PackageProjectUrl>
