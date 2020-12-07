@@ -54,5 +54,10 @@ namespace Com.H.Threading.Scheduler
         /// </summary>
         IServiceControlProperties Schedule { get; }
 
+        /// <summary>
+        /// DataModel to fill placeholders IServiceItem values
+        /// </summary>
+        object DataModel { get; }
+
     }
 }

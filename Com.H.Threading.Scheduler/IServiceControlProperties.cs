@@ -96,8 +96,13 @@ namespace Com.H.Threading.Scheduler
         //int? CurrentRetryAttemptsAfterError { get; }
 
         /// <summary>
-        /// Timestamp of the last failed attempt
+        /// A custom DateTime to override DateTime.Now when filling custom placeholders for 
+        /// {H{now}} {H{today}} {H{tomorrow}}
         /// </summary>
-        ///DateTime? LastFailedAttempt { get; }
+        DateTime Now { get; }
+
+        DateTime Today { get; }
+        DateTime Tomorrow { get; }
+
     }
 }

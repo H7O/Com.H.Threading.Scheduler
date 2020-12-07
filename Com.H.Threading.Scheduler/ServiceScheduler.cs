@@ -60,8 +60,7 @@ namespace Com.H.Threading.Scheduler
         /// <param name="timeLog"></param>
         public ServiceScheduler(ICollection<IServiceItem> services, IServiceTimeLogger timeLog = null)
         {
-            if (services == null) throw new ArgumentNullException(nameof(services));
-            this.Services = services;
+            this.Services = services ?? throw new ArgumentNullException(nameof(services));
             this.TimeLog = timeLog ?? new XmlFileServiceTimeLogger();
             this.ThreadTraffic = new TrafficController();
             this.TickInterval = 1000;
@@ -232,7 +231,6 @@ namespace Com.H.Threading.Scheduler
             if (item.Schedule.NotAfter != null
                 && timeNow > item.Schedule.NotAfter) return false;
             #endregion
-
 
             #region date
             if (item.Schedule.Date != null

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Xml.Linq;
 
 namespace Com.H.Threading.Scheduler
 {
@@ -65,8 +66,7 @@ namespace Com.H.Threading.Scheduler
                     uriSettings.CachePeriod = UriContentCachePeriod.OncePerDay;
                 else
                 {
-                    int cacheInMilisec;
-                    if (int.TryParse(cachePeriod, out cacheInMilisec)
+                    if (int.TryParse(cachePeriod, out int cacheInMilisec)
                         && cacheInMilisec > 0
                         )
                     {
@@ -82,13 +82,9 @@ namespace Com.H.Threading.Scheduler
 
         }
 
-
-        //public static string GetUniqueKey(this IServiceItem item)
-        //=> $"{item?.Name}/{item?.GetValue()}" 
-        //    + item?.Attributes?.Items?.Keys==null?""
-        //    :string.Join("/",
-        //        item?.Attributes?.Items?.Keys?
-        //        .Concat(item?.Attributes?.Items?.Values));
+        public static string Fill(this XElement src, object dataModel)
+            => src?.Value?.Fill(dataModel, "{H{", "}}");
+        
 
 
         

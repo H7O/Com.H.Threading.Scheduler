@@ -31,8 +31,7 @@ namespace Com.H.Threading.Scheduler
             {
                 var item = this.ServiceItem["not_before"]?.GetValue();
                 if (item == null) return null;
-                DateTime notBefore;
-                if (DateTime.TryParse(item, out notBefore)) return notBefore;
+                if (DateTime.TryParse(item, out DateTime notBefore)) return notBefore;
                 return null;
             }
         }
@@ -42,8 +41,7 @@ namespace Com.H.Threading.Scheduler
             {
                 var item = this.ServiceItem["not_after"]?.GetValue();
                 if (item == null) return null;
-                DateTime notAfter;
-                if (DateTime.TryParse(item, out notAfter)) return notAfter;
+                if (DateTime.TryParse(item, out DateTime notAfter)) return notAfter;
                 return null;
             }
         }
@@ -54,8 +52,7 @@ namespace Com.H.Threading.Scheduler
             {
                 var item = this.ServiceItem["date"]?.GetValue();
                 if (item == null) return null;
-                DateTime exactDateTime;
-                if (DateTime.TryParse(item, out exactDateTime)) return exactDateTime.Date;
+                if (DateTime.TryParse(item, out DateTime exactDateTime)) return exactDateTime.Date;
                 return null;
             }
         }
@@ -96,12 +93,8 @@ namespace Com.H.Threading.Scheduler
             {
                 var item = this.ServiceItem["time"]?.GetValue();
                 if (item == null) return null;
-                TimeSpan value;
-                if (TimeSpan.TryParse(item, out value))
-                {
-                    // HVD("time", value);
+                if (TimeSpan.TryParse(item, out TimeSpan value))
                     return value;
-                }
                 return null;
             }
         }
@@ -111,16 +104,9 @@ namespace Com.H.Threading.Scheduler
             get
             {
                 var item = this.ServiceItem["until_time"]?.GetValue();
-                if (item == null)
-                {
-                    return null;
-                }
-                TimeSpan value;
-                if (TimeSpan.TryParse(item, out value))
-                {
-                    // HVD("until_time", value);
+                if (item == null) return null;
+                if (TimeSpan.TryParse(item, out TimeSpan value))
                     return value;
-                }
                 return null;
             }
         }
@@ -130,8 +116,7 @@ namespace Com.H.Threading.Scheduler
             {
                 var item = this.ServiceItem["interval"]?.GetValue();
                 if (item == null) return null;
-                int value;
-                if (int.TryParse(item, out value)) return value;
+                if (int.TryParse(item, out int value)) return value;
                 return null;
             }
         }
@@ -147,8 +132,7 @@ namespace Com.H.Threading.Scheduler
             {
                 var item = this.ServiceItem["sleep_on_error"]?.GetValue();
                 if (item == null) return null;
-                int value;
-                if (int.TryParse(item, out value)) return value;
+                if (int.TryParse(item, out int value)) return value;
                 return null;
             }
         }
@@ -158,19 +142,31 @@ namespace Com.H.Threading.Scheduler
             {
                 var item = this.ServiceItem["retry_attempts_on_error"]?.GetValue();
                 if (item == null) return null;
-                int value;
-                if (int.TryParse(item, out value)) return value;
+                if (int.TryParse(item, out int value)) return value;
                 return null;
             }
         }
 
+        public DateTime Now
+        {
+            get
+            {
+                var item = this.ServiceItem["now"]?.GetValue();
+                if (item == null) return DateTime.Now;
+                if (DateTime.TryParse(item, out DateTime dateTime)) return dateTime;
+                return DateTime.Now;
+            }
+        }
 
-        
+        public DateTime Today { get => this.Now.Date; }
+        public DateTime Tomorrow { get => this.Today.AddDays(1); }
+
+
         #endregion
 
         #region constructor
         public ServiceControlProperties(IServiceItem item)
-            => (this.ServiceItem, this.Cache) = (item, new CachedRun());
+        => (this.ServiceItem, this.Cache) = (item, new CachedRun());
 
         #endregion
 

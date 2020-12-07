@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Description>An easy to use, simple yet feature-rich open-source framework for writing middlewares in the form of a low resource footnote Windows services or Linux Daemons.
 Takes care of craceful multi-threaded service granular scheduling, shutdowns, restarts, error recovery.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -12,10 +12,11 @@ Takes care of craceful multi-threaded service granular scheduling, shutdowns, re
     <PackageTags>Multi-threading,Concurrency,Windows Service,Linux Daemon</PackageTags>
     <PackageReleaseNotes>Initial release</PackageReleaseNotes>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <Authors>Hussein Al Bayati</Authors>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Com.H" Version="0.0.2" />
+    <PackageReference Include="Com.H" Version="0.0.3" />
     <PackageReference Include="Com.H.Threading" Version="1.0.2" />
   </ItemGroup>
 

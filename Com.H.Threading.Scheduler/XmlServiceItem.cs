@@ -13,38 +13,34 @@ namespace Com.H.Threading.Scheduler
 {
     public class XmlServiceItem : IServiceItem, IDisposable
     {
-        private bool disposedValue;
         #region properties
+        
         public string UniqueKey { get; set; }
-        //{
-        //    get
-        //    {
-        //        if (!string.IsNullOrWhiteSpace(uniqueKey)) return uniqueKey;
-        //        return uniqueKey = this.GetUniqueKey();
-        //    }
-        //}
         private XElement Element { get; set; }
         private UriContentSettings UriSettings { get; set; }
         private CancellationTokenSource Cts { get; set; }
+        private bool disposedValue;
+        public object DataModel { get; private set; }
         public string Name { get; private set; }
+        
         public string GetValue()
         {
             try
             {
                 if (this.UriSettings.UriTypeContent == UriContentType.No)
-                    return this.Element.Value;
+                    return this.Element.Fill(this.DataModel);
                 if (
 
                         this.UriSettings.UriTypeContent == UriContentType.Yes
-                        && !Uri.IsWellFormedUriString(this.Element.Value, UriKind.Absolute)
+                        && !Uri.IsWellFormedUriString(this.Element.Fill(this.DataModel), UriKind.Absolute)
                     )
                 {
                     throw new FormatException(
-                        $"Invalid uri format for {this.Name}: {this.Element.Value}");
+                        $"Invalid uri format for {this.Name}: {this.Element.Fill(this.DataModel)}");
                 }
                 if (this.UriSettings.CachePeriod == UriContentCachePeriod.None)
                 {
-                    return new Uri(this.Element.Value)
+                    return new Uri(this.Element.Fill(this.DataModel))
                         .GetContentAsync(this.Cts?.Token,
                         this.UriSettings.Referer, this.UriSettings.UserAgent)
                         .GetAwaiter().GetResult();
@@ -53,13 +49,13 @@ namespace Com.H.Threading.Scheduler
                     this.Cache = new CachedRun();
                 Func<string> GetContent = () =>
                 {
-                    var value = new Uri(this.Element.Value).GetContentAsync(
+                    var value = new Uri(this.Element.Fill(this.DataModel)).GetContentAsync(
                                 this.Cts?.Token, this.UriSettings.Referer,
                                 this.UriSettings.UserAgent)
                         .GetAwaiter().GetResult();
                     if (value == null)
                         throw new TimeoutException(
-                            $"Uri settings retrieval timed-out for {this.Name}: {this.Element.Value}");
+                            $"Uri settings retrieval timed-out for {this.Name}: {this.Element.Fill(this.DataModel)}");
                     return value;
                 };
                 return this.UriSettings.CachePeriod ==
@@ -103,22 +99,38 @@ namespace Com.H.Threading.Scheduler
 
         #region constructor
 
-        public XmlServiceItem(XElement element, CancellationToken? token = null)
+        public XmlServiceItem(XElement element, IServiceItem parent = null, CancellationToken? token = null)
         {
-            if (element == null) throw new ArgumentNullException(nameof(element));
-            this.Element = element;
+            this.Element = element ?? throw new ArgumentNullException(nameof(element));
+            this.Parent = parent;
             if (token != null) this.Cts = CancellationTokenSource
                     .CreateLinkedTokenSource((CancellationToken)token);
             this.Attributes = new XmlServiceItemAttr(this.Element);
-            this.Children = this.Element.Elements()?.Select(x => new XmlServiceItem(x, this.Cts?.Token)
-            { Parent = this })?.ToArray() ?? Array.Empty<XmlServiceItem>();
             this.Name = this.Element.Name.LocalName;
             this.UriSettings = this.Attributes.GetUriSettings();
-            if (this["sys"] != null)
-            {
-                this.Schedule = new ServiceControlProperties(this["sys"]);
-            }
             this.UniqueKey = this.Element.ToString().ToSha256InBase64String();
+
+
+            this.Children = this.Element.Elements()?.Select(x =>
+            new XmlServiceItem(x, this, this.Cts?.Token))?.ToArray() ?? Array.Empty<XmlServiceItem>();
+
+            this.Schedule = this["sys"] == null? this.Schedule = parent?.Schedule
+                : new ServiceControlProperties(this["sys"]);
+
+            this.DataModel = this.Schedule == null ?
+                this.DataModel = new
+                {
+                    Now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+                    Today = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    Tomorrow = DateTime.Today.AddDays(1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                }
+                : new
+                {
+                    Now = this.Schedule.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+                    Today = this.Schedule.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    Tomorrow = this.Schedule.Tomorrow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                };
+                
         }
         #endregion
 
