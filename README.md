@@ -225,6 +225,9 @@ This is achieved by adding **days of the week** rule `<dow>`
 ```
 
 ---
+## General conditional tags
+Here is the list of all `general conditional tags` (i.e. run rules) available.
+
 | Tag        | Function                                  | Format                        | Example         |
 |------------|-------------------------------------------|-------------------------------|-----------------|
 | interval   | How often it runs in miliseconds          | miliseconds                   | 3000            |
