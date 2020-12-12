@@ -2,7 +2,7 @@
 An easy to use, simple, yet feature-rich open-source framework for writing middlewares in the form of low resource footnote Windows services and/or Linux Daemons. Written in .NET starndard 2.0 to offer the convenience of using it under both older .NET framework 4.8 and newer .NET 5 and beyond.
  
 ## What's the purpose of this library?
-This library helps build solutions that require some logic to run in the background without user input.
+This library helps build solutions that require some of their time sensitive logic to conditinally run as a background process without user input.
 
 And although most solutions might not have the need for such logic, the ones that do would hopefully benefit from what this library offers.
 
