@@ -227,6 +227,8 @@ Here is the list of all `general conditional tags` (i.e. run rules) available.
 | doy        | What days of the year allowed to run      | days of the year              | 53,250,300      |
 | date       | On specific date                          | yyyy-MM-dd                    | 2077-01-23      |
 | enabled    | enables or disables the task              | true or false                 | true            |
+| not_before | Date & time not to run before             | yyyy-MM-dd HH:mm:ss           | 2077-01-23 14:23|
+| not_after  | Date & time not to run after              | yyyy-MM-dd HH:mm:ss           | 2077-01-23 14:23|
 
 
 
