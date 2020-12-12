@@ -144,7 +144,7 @@ The new config file would look like the following:
       <interval>3000</interval>
     </sys>
 	<!-- a custom tag that the we'd like the library to pass to our code when it gets triggers  -->
-    <greeting_message>Good morning! it's 11:00 AM!</greeting_message>
+    <greeting_message>Hello there!</greeting_message>
   </task>
 </tasks_list>
 ```
@@ -174,7 +174,7 @@ This can be achieved by combining `<interval>` with `<time>` and a new tag calle
       <interval>3000</interval>
     </sys>
 	<!-- a custom tag that the we'd like the library to pass to our code when it gets triggers  -->
-    <greeting_message>Good morning! it's 11:00 AM!</greeting_message>
+    <greeting_message>Hello there!</greeting_message>
   </task>
 </tasks_list>
 ```
@@ -216,7 +216,7 @@ This is achieved by adding **days of the week** rule `<dow>`
 	  <dow>Monday,Thursday</dow>
     </sys>
 	<!-- a custom tag that the we'd like the library to pass to our code when it gets triggers  -->
-    <greeting_message>Good morning! it's 11:00 AM!</greeting_message>
+    <greeting_message>Hello there!</greeting_message>
   </task>
 </tasks_list>
 ```
