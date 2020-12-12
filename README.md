@@ -31,6 +31,19 @@ We'll discuss the configuration file format in details later-on, but for now, le
 > scheduler.xml
 ```xml
 <?xml version="1.0" encoding="utf-8" ?>
+<tasks_list>
+  <task>
+    <sys>
+      <time>11:00</time>
+    </sys>
+    <greeting_message>Good morning! it's 11:00 AM!</greeting_message>
+  </task>
+</tasks_list>
+```
+---
+> the same scheduler.xml file above but with comments describing the configuration tags
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
 <!-- the first root tag is the container of tasks (aka services / aka prcocesses), and the root tag name itself can be anything we like -->
 <!-- let's call it <tasks_list> in this example -->
 <tasks_list>
@@ -47,6 +60,7 @@ We'll discuss the configuration file format in details later-on, but for now, le
   </task>
 </tasks_list>
 ```
+
 
 The configuration above tells the scheduler engine to run our desired code once every day at 11:00 AM and passes it the information we placed under the tag `<greeting_message>`.
 
