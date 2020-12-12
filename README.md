@@ -24,7 +24,7 @@ The following examples are orginized to cover scenarious in the order from simpl
 
 This simple example demonstrate how to use the library to build a console application that runs some logic once a day at a specific time.
 
-The first thing we need to do before writing code is prepare a simple configuration file that tells the library of the rules that it's little engine needs to follow when scheduling services (note: `services` might also be referred to in this document as `tasks` or `processes`, all intended to mean the same thing, which is simply a block of code that needs to be executed). 
+The first thing we need to do before writing code is prepare a simple configuration file that tells the library of the rules it's engine needs to follow when scheduling services (note: `services` might also be referred to in this document as `tasks` or `processes`, all intended to mean the same thing, which is simply a block of code that needs to be executed). 
 
 We'll discuss the configuration file format in details later-on, but for now, let's build a simple config file to serve as a sample of what the configuration file structure looks like. Later-on, we can reveal more scheduling control features available to setup in the config file as we go through more examples.
 
