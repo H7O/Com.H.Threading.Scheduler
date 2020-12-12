@@ -100,7 +100,7 @@ namespace scheduler_tester
             System.Console.WriteLine("done.");
         }
 		
-		// handles the event that is triggered by the engine
+		// the code we want the scheduler engine to call at runtime
         static void HandleTask(object sender, ServiceSchedulerEventArgs e)
         {
 			// print the content stored in <greeting_message> tag
