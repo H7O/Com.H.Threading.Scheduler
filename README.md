@@ -100,7 +100,7 @@ namespace scheduler_tester
             System.Console.WriteLine("done.");
         }
 		
-		// the code we want the scheduler engine to call at runtime
+		// the code we want the engine to call at runtime
         static void HandleTask(object sender, ServiceSchedulerEventArgs e)
         {
 			// print the content stored in <greeting_message> tag
@@ -273,6 +273,10 @@ Documentation in progress. Stay tuned.
 Documentation in progress. Stay tuned.
 
 ### Repeat variables
+Documentation in progress. Stay tuned.
+
+---
+## Cancellation Tokens and exiting gracefully
 Documentation in progress. Stay tuned.
 
 ---
