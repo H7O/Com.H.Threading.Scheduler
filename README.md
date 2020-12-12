@@ -119,7 +119,7 @@ Once the task runs and our message is printed, you'll notice a new file is gener
 
 Aside from maintaining persistency during restarts, the engine also detects changes made to the config file during both runtime and even between restarts prompting it to re-evaluate the modified tasks `<sys>` tag run conditions.
 
-The engine achieves this through generating and keeping both in memory and in the persistant log file a sha256 sum of each task defined in the config file so that any modification made to the config file can be followed by a sha256 integrity check to all tasks to determine which were the ones modified.
+The engine achieves this through generating and keeping both in memory and in the persistant log file a sha256 sum of each task defined in the config file so that any modification made to the config file can be followed by a sha256 integrity check on all tasks to determine which were the ones modified.
 
 The modified tasks then gets treated as entirely new tasks having a clean run status history making them eligible for running in accordance with their `<sys>` tag run conditions.
 
@@ -135,18 +135,14 @@ The new config file would look like the following:
 > scheduler.xml
 ```xml
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- the first root tag is the container of tasks (aka services / aka prcocesses), and the root tag name itself can be anything we like -->
-<!-- let's call it <tasks_list> in this example -->
 <tasks_list>
-<!-- inside <tasks_list> we have our individual tasks (could be one or many tasks)-->
-<!-- let's simply call <task> the tag that identifies individual tasks within the <tasks_list> tag  -->
   <task>
-	<!-- the scheduling engine within the library looks for the <sys> tag inside each <task> to get the rules it needs to follow when execute a task -->
     <sys>
-	  <!-- this task example has only one rule, which is the <interval> rule, this rule tells the engine to run this task every 3,000 miliseconds (i.e 3 seconds) all throughout the day -->
+	  <!-- this task example has only one rule, which is the <interval> rule, 
+	  this rule tells the engine to run this task every 3,000 miliseconds 
+	  (i.e 3 seconds) all throughout the day -->
       <interval>3000</interval>
     </sys>
-	<!-- a custom tag that the we'd like the library to pass to our code when it gets triggers  -->
     <greeting_message>Hello there!</greeting_message>
   </task>
 </tasks_list>
@@ -163,20 +159,18 @@ This can be achieved by combining `<interval>` with `<time>` and a new tag calle
 > scheduler.xml
 ```xml
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- the first root tag is the container of tasks (aka services / aka prcocesses), and the root tag name itself can be anything we like -->
-<!-- let's call it <tasks_list> in this example -->
 <tasks_list>
-<!-- inside <tasks_list> we have our individual tasks (could be one or many tasks)-->
-<!-- let's simply call <task> the tag that identifies individual tasks within the <tasks_list> tag  -->
   <task>
-	<!-- the scheduling engine within the library looks for the <sys> tag inside each <task> to get the rules it needs to follow when execute a task -->
     <sys>
-	  <!-- this task example has 3 rules, <interval> rule to determine how often it runs, the <time> to determine from what time it start running, and <time_end> to determine until what time it runs -->
-	  <time>09:00</time>
-	  <until_time>14:00</until_time>
-      <interval>3000</interval>
+	  <!-- this task example has 3 rules: 
+	  <interval> to determine how often it runs
+	  <time> to determine from what time it start running
+	  <time_end> to determine until what time it runs 
+	  -->
+		<time>09:00</time>
+		<until_time>14:00</until_time>
+		<interval>3000</interval>
     </sys>
-	<!-- a custom tag that the we'd like the library to pass to our code when it gets triggers  -->
     <greeting_message>Hello there!</greeting_message>
   </task>
 </tasks_list>
@@ -199,13 +193,8 @@ This is achieved by adding **days of the week** rule `<dow>`
 > scheduler.xml
 ```xml
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- the first root tag is the container of tasks (aka services / aka prcocesses), and the root tag name itself can be anything we like -->
-<!-- let's call it <tasks_list> in this example -->
 <tasks_list>
-<!-- inside <tasks_list> we have our individual tasks (could be one or many tasks)-->
-<!-- let's simply call <task> the tag that identifies individual tasks within the <tasks_list> tag  -->
   <task>
-	<!-- the scheduling engine within the library looks for the <sys> tag inside each <task> to get the rules it needs to follow when execute a task -->
     <sys>
 	  <!-- this task example has 4 rules:
 	  <interval> rule to determine how often it runs 
@@ -213,12 +202,11 @@ This is achieved by adding **days of the week** rule `<dow>`
 	  <time_end> to determine until what time to run 
 	  <dow> to determine on what days of the week it's allowed to run.
 	  -->
-	  <time>09:00</time>
-	  <until_time>14:00</until_time>
-      <interval>3000</interval>
-	  <dow>Monday,Thursday</dow>
+		<time>09:00</time>
+		<until_time>14:00</until_time>
+		<interval>3000</interval>
+		<dow>Monday,Thursday</dow>
     </sys>
-	<!-- a custom tag that the we'd like the library to pass to our code when it gets triggers  -->
     <greeting_message>Hello there!</greeting_message>
   </task>
 </tasks_list>
