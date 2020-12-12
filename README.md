@@ -6,7 +6,7 @@ This library helps build solutions that require some of their time sensitive log
 
 And although most solutions might not have the need for such time-sensitive background process logic, the ones that do would hopefully benefit from what this library offers.
 
-One of the goals this library aims to achieve is help developers write background services while focusing only on what matters, which is the logic that needs to run in the background, and leaving the process scheduling details conveniently hidden behind an easy to use, feature-rich, and efficient scheduling engine tucked away in this small library.
+One of the goals of this library is to help developers write background services while focusing only on what matters, which is the logic that needs to run in the background, and leaving the process scheduling details conveniently hidden behind an easy to use, feature-rich, and efficient scheduling engine tucked away in this small library.
 
 ## How to install
 Perhaps the easiest way is to install the package for this library is done via NuGet package manager [https://www.nuget.org/packages/Com.H.Threading.Scheduler/](https://www.nuget.org/packages/Com.H.Threading.Scheduler/)
