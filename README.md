@@ -64,7 +64,10 @@ We'll discuss the configuration file format in details later-on, but for now, le
 
 The configuration above tells the scheduler engine to run our desired code once every day at 11:00 AM and passes it the information we placed under the custom tag `<greeting_message>`.
 
-> **Note:** You can add as many custom tags (including nested custom tags) to the configuration and the scheduler engine would pass them all to your code at runtime when it gets called for execution. More details on that later-on in **`custom tags`** section
+> **Note 1:** You can add as many custom tags (including nested custom tags) to the configuration and the scheduler engine would pass them all to your code at runtime when it gets called for execution. More details on that later-on in **`custom tags`** section
+
+> **Note 2:** You can add as many tasks as you want with different or same run conditions and the engine would run them all concurrently.
+
 
 What's left is writing our desired code that we want to get called by the engine at 11:00 AM.
 
