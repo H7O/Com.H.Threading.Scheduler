@@ -220,7 +220,7 @@ This is achieved by adding **days of the week** rule `<dow>`
   </task>
 </tasks_list>
 ```
-<br>
+
 ---
 | Tag        | Function                                  | Format                        | Example         |
 |------------|-------------------------------------------|-------------------------------|-----------------|
@@ -234,7 +234,7 @@ This is achieved by adding **days of the week** rule `<dow>`
 | date       | On specific date                          | yyyy-MM-dd                    | 2077-01-23      |
 | enabled    | enables or disables the task              | true or false                 | true            |
 
-<br>
+
 
 ---
 ## Custom tags
