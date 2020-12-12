@@ -4,7 +4,7 @@ An easy to use, simple, yet feature-rich open-source framework for writing middl
 ## What's the purpose of this library?
 This library helps build solutions that require some of their time sensitive logic to conditinally run as a background process without user input.
 
-And although most solutions might not have the need for such logic, the ones that do would hopefully benefit from what this library offers.
+And although most solutions might not have the need for such time-sensitive background process, the ones that do would hopefully benefit from what this library offers.
 
 One of the goals this library aims to achieve is help developers write background services while focusing only on what matters, which is the logic that needs to run in the background, and leaving the process scheduling details conveniently hidden behind an easy to use, feature-rich, and efficient scheduling engine tucked away in this small library.
 
