@@ -234,7 +234,101 @@ Here is the list of all `general conditional tags` (i.e. run rules) available.
 
 ---
 ## Custom tags
-Documentation in progress. Stay tuned.
+Custom tags are treated as configuration information that the scheduler engine just passes to your code when executing a task. You can put as much as you want information inside those tags, and have as many custom tags as you want for each task.
+
+In previous examples, we've seen how we used the custom tag `<greeting_message>` to pass information to our task to print a message on screen.
+
+We can come up with many different examples of information that we might want to pass to a task, as custom tags not only help us pass information about a specific task, they also helps us identify which task is calling our code if we have defined multiple tasks in our config file.
+
+In a large application that has different multiple types of tasks and different ways of handling each particular task, custom tags comes handy in identifying what task called our code so we can route the handling of that task to the appropriate logic in our application. 
+
+For example, giving the task a `<name>` custom tag is a good practice that helps our code know which task called it.
+
+The following showcase an example on how to make use of a custom tag to help identify what logic to run when we have multiple tasks.
+
+### **Example 3 - Running two different tasks.**
+
+This exapmle demonstrate running two different tasks, each requires us to handle it differently than the other. One task is to print a message on screen, the other is to calculate the sum of some numbers then prints the result on screen.
+
+To build such logic, let's first write our configuration file:
+
+> scheduler.xml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<tasks_list>
+  <task>
+    <name>print a message</name>
+    <sys>
+	    <!-- this task is set to run every 3 seconds -->
+		  <interval>3000</interval>
+    </sys>
+    
+    <greeting_message>Hello there!</greeting_message>
+  </task>
+  <task>
+    <name>calculate some numbers</name>
+    <sys>
+	    <!-- this task is set to run every 2 seconds -->
+		  <interval>2000</interval>
+    </sys>
+    <some_numbers>32,56,4,67,1</some_numbers>
+  </task>
+</tasks_list>
+```
+
+Now let's build our solution that handles those two tasks.
+
+```c#
+using System;
+using System.IO;
+using System.Linq;
+using Com.H.Threading.Scheduler;
+
+namespace scheduler_tester
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            var configPath = Path.Combine(Directory.GetCurrentDirectory(), "scheduler.xml");
+            if (File.Exists(configPath)==false) throw new FileNotFoundException(configPath);
+            var scheduler = new ServiceScheduler(configPath);
+            scheduler.ServiceIsDue += HandleTask;
+            scheduler.Start();
+            System.Console.WriteLine("press <enter> to exit.");
+            Console.ReadLine();
+            scheduler.Stop();
+            System.Console.WriteLine("done.");
+        }
+        static void HandleTask(object sender, ServiceSchedulerEventArgs e)
+        {
+            switch(e["name"] as string)
+            {
+                case "print a message": ProcessPrintMessageTask(e);
+                break;
+                case "calculate some numbers": ProcessCountNumbersTask(e);
+                break;
+                default:System.Console.WriteLine("unknown task");
+                break;
+            }
+        }
+
+        static void ProcessPrintMessageTask(ServiceSchedulerEventArgs e)
+        {
+            System.Console.WriteLine(e["greeting_message"]);
+        }
+        static void ProcessCountNumbersTask(ServiceSchedulerEventArgs e)
+        {
+            int sum = e["some_numbers"]
+                .Split(new char[] {','}, StringSplitOptions.RemoveEmptyEntries)
+                .Select(num=>int.Parse(num)).Sum();
+            System.Console.WriteLine($"sum of {e["some_numbers"]} = {sum}");    
+        }
+    }
+}
+```
+
+> **NOTE**: You could use `<id>` or any other custom tag beside `<name>` to identify tasks. It's entirely up to you and how you'd like to choose your best practices for your own workflow. This is just one example on how one could come about to do so.
 
 ---
 ## Special conditional tags
