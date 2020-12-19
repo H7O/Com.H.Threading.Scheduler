@@ -246,7 +246,7 @@ For example, giving the task a `<name>` custom tag is a good practice that helps
 
 The following example showcase how to make use of a custom tag to help identify what logic to run when we have multiple tasks.
 
-### **Example 3 - Running two different tasks.**
+### **Example 5 - Running two different tasks.**
 
 This exapmle demonstrate running two different tasks, each requires us to handle it differently than the other. One task is to print a message on screen, the other is to calculate the sum of random numbers then prints the result on screen.
 
