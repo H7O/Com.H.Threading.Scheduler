@@ -238,17 +238,17 @@ Custom tags are treated as configuration information that the scheduler engine j
 
 In previous examples, we've seen how we used the custom tag `<greeting_message>` to pass information to our task to print a message on screen.
 
-We can come up with many different examples of information that we might want to pass to a task, as custom tags not only help us pass information about a specific task, they also helps us identify which task is calling our code if we have defined multiple tasks in our config file.
+We can come up with many different examples of information that we might want to pass to a task, as custom tags not only help us pass information about a specific task, they also help us identify which task is calling our code if we have defined multiple tasks in our config file.
 
-In a large application that has different multiple types of tasks and different ways of handling each particular task, custom tags comes handy in identifying what task called our code so we can route the handling of that task to the appropriate logic in our application. 
+In a large application that has different multiple types of tasks and different ways of handling each particular task, custom tags come handy in identifying which task called our code so we can route the handling of that task to the appropriate logic in our application.
 
-For example, giving the task a `<name>` custom tag is a good practice that helps our code know which task called it.
+For example, giving the task a `<name>` custom tag is a good practice that helps our code know which task issued the call.
 
-The following showcase an example on how to make use of a custom tag to help identify what logic to run when we have multiple tasks.
+The following example showcase how to make use of a custom tag to help identify what logic to run when we have multiple tasks.
 
 ### **Example 3 - Running two different tasks.**
 
-This exapmle demonstrate running two different tasks, each requires us to handle it differently than the other. One task is to print a message on screen, the other is to calculate the sum of some numbers then prints the result on screen.
+This exapmle demonstrate running two different tasks, each requires us to handle it differently than the other. One task is to print a message on screen, the other is to calculate the sum of random numbers then prints the result on screen.
 
 To build such logic, let's first write our configuration file:
 
