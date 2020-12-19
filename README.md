@@ -84,7 +84,7 @@ namespace scheduler_tester
         static void Main(string[] args)
         {
 			// path to our config file
-            var configPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "scheduler.xml";
+            var configPath = Path.Combine(Directory.GetCurrentDirectory(), "scheduler.xml");
 			// throw error if config file not found in current folder
             if (File.Exists(configPath)==false) throw new FileNotFoundException(configPath);
 			// instantiate the scheduler engine
