@@ -190,7 +190,8 @@ namespace Com.H.Threading.Scheduler
                             return (item.Children?.SelectMany(x=>AllChildren(x))??
                                 Enumerable.Empty<IServiceItem>()).Append(item);
                         }
-                        foreach (var child in AllChildren(service))
+                        foreach (var child in AllChildren(service)
+                            .Where(x=>x.Vars?.Custom == null))
                             child.Vars.Custom = repeatDataModel;
 
                         RunService();
