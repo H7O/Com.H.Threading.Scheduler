@@ -27,16 +27,13 @@ namespace Com.H.Threading.Scheduler
     public class ServiceSchedulerEventArgs : EventArgs
     {
         #region properties
-        public CancellationToken CancellationToken { get; private set; }
-        public object Sender { get; private set; }
-        public IServiceItem Service { get; private set; }
-        public IEnumerable<IServiceItem> AllServices { get; private set; }
-        public DateTime? LastExecuted { get; private set; }
-        public DateTime Now { get; private set; }
-        public DateTime Today { get; private set; }
-        public DateTime Tomorrow { get; private set; }
-        public ReplayPlan Loop { get; private set; }
-        public IDictionary<string, object> ExtraVars { get; private set; }
+        public CancellationToken CancellationToken { get; init; }
+        public object Sender { get; init; }
+        public IServiceItem Service { get; init; }
+        public IEnumerable<IServiceItem> AllServices { get; init; }
+        public DateTime? LastExecuted { get; init; }
+        public ReplayPlan Loop { get; init; }
+        public IDictionary<string, object> ExtraVars { get; init; }
         #endregion
 
         #region indexer
@@ -62,7 +59,6 @@ namespace Com.H.Threading.Scheduler
                         
         }
         
-        
 
         #endregion
 
@@ -70,28 +66,13 @@ namespace Com.H.Threading.Scheduler
         public ServiceSchedulerEventArgs(
             ServiceScheduler scheduler,
             IServiceItem service,
-            CancellationToken cancellationToken,
-            IDictionary<string, object> extraVars = null
+            CancellationToken cancellationToken
             )
         {
             this.Sender = scheduler;
             this.Service = service;
             this.CancellationToken = cancellationToken;
-            this.ExtraVars = extraVars;
             this.Loop = new ReplayPlan();
-
-            #region time variables
-            if (service?["now_datetime"]?.GetValue() != null
-                &&
-                DateTime.TryParse(service["now_datetime"].GetValue(), out _)
-                )
-                this.Now = DateTime.Parse(service["now_datetime"].GetValue(), CultureInfo.InvariantCulture);
-            else this.Now = DateTime.Now;
-
-            this.Today = this.Now.Date;
-            this.Tomorrow = this.Today.AddDays(1);
-            #endregion
-
         }
         #endregion
 
@@ -115,6 +96,17 @@ namespace Com.H.Threading.Scheduler
             try
             {
                 return x?.GetValue();
+            }
+            catch { }
+            return null;
+        });
+
+        public IEnumerable<IEnumerable<dynamic>> GetModels(string index)
+        => this.GetItems(index).Select(x =>
+        {
+            try
+            {
+                return x?.GetModel<dynamic>();
             }
             catch { }
             return null;

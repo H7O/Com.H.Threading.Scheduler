@@ -1,9 +1,11 @@
 ﻿using Com.H.Text;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Xml.Linq;
 
 namespace Com.H.Threading.Scheduler
@@ -24,6 +26,20 @@ namespace Com.H.Threading.Scheduler
                 if (this.ServiceItem["enabled"] == null) return true;
                 return this.ServiceItem["enabled"].GetValue()?.ContainsIgnoreCase("true")??false;
             }
+        }
+
+        public IEnumerable<dynamic> Repeat
+        {
+            get => this.ServiceItem["repeat"]?.GetModel<dynamic>();
+            //get =>
+            //    this.ServiceItem["repeat"] == null? null
+                    //: (IEnumerable<dynamic>) Enumerable.Aggregate(
+                    //                    this.ServiceItem.AllServices?.ValueProcessors
+                    //                    ?? new ConcurrentDictionary<string, Func<ValueProcessorItem, CancellationToken?, ValueProcessorItem>>()
+                    //                    , ValueProcessorItem.Parse(this.ServiceItem["repeat"]).DateProcessor()
+                    //                    , (i, n) => n.Value(i, this.CToken).DateProcessor()
+                    //                    ).CsvDataModelProcessor().Item.Vars.Custom;
+            
         }
         public DateTime? NotBefore
         {

@@ -101,6 +101,11 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
         #region start / stop
+        /// <summary>
+        /// Start monitoring scheduled services in order to trigger IsServiceDue event when services are ready for execution.
+        /// </summary>
+        /// <param name="cancellationToken">If provided, the monitoring force stops all running services</param>
+        /// <returns>a running monitoring task</returns>
         public Task Start(CancellationToken? cancellationToken = null)
         {
             if (!this.RunSwitch.TryOpen()) return Task.CompletedTask;
@@ -111,6 +116,9 @@ namespace Com.H.Threading.Scheduler
                     (CancellationToken) cancellationToken);
             return Cancellable.CancellableRunAsync(MonitorServices, this.Cts.Token);
         }
+        /// <summary>
+        /// Stops monitoring services schedule, and terminates running services.
+        /// </summary>
         public void Stop()
         {
             if (!this.RunSwitch.TryClose()) return;
@@ -153,23 +161,41 @@ namespace Com.H.Threading.Scheduler
                 
 
                 if (!this.IsDue(service)) return;
-                // todo: loop vars main starts here
-
-                if (this.Cts.IsCancellationRequested) return;
-                // todo: threaded having continuewith to check
-                // run status
                 
-                evArgs = new ServiceSchedulerEventArgs(
-                    this,
-                    service,
-                    this.Cts.Token,
-                    null //todo: extra vars from loop data
-                    );
+                
+                void RunService()
+                {
+                    
+                    if (this.Cts.IsCancellationRequested) return;
 
-                // if eligible to run (and has no previous error logged), trigger synchronous event
-                this.OnServiceIsDueAsync(evArgs)
-                    .GetAwaiter().GetResult();
+                    // todo: threaded having continuewith to check
+                    // run status
 
+                    evArgs = new ServiceSchedulerEventArgs(
+                        this,
+                        service,
+                        this.Cts.Token
+                        );
+
+                    // if eligible to run (and has no previous error logged), trigger synchronous event
+                    this.OnServiceIsDueAsync(evArgs)
+                        .GetAwaiter().GetResult();
+                }
+
+                if (service.Schedule?.Repeat != null)
+                    foreach(var repeatDataModel in service.Schedule?.Repeat)
+                    {
+                        service.Vars.Custom = repeatDataModel;
+                        RunService();
+                        // todo: between repeat sleep timer goes here
+                    }
+
+
+
+                
+
+                
+                
                 // log successful run, and reset retry on error logic in case it was previously set.
                 this.TimeLog[service.UniqueKey].LastExecuted = DateTime.Now;
                 this.TimeLog[service.UniqueKey].ErrorCount = 0;
@@ -193,9 +219,7 @@ namespace Com.H.Threading.Scheduler
         private bool IsDue(IServiceItem item)
         {
             if (item?.Schedule == null) return false;
-            #region is enabled
-            if (!item.Schedule.Enabled) return false;
-            #endregion
+            
 
             DateTime timeNow = DateTime.Now;
 
@@ -290,6 +314,9 @@ namespace Com.H.Threading.Scheduler
             }
             #endregion
 
+            #region is enabled
+            if (!item.Schedule.Enabled) return false;
+            #endregion
 
             return true;
 
@@ -306,6 +333,10 @@ namespace Com.H.Threading.Scheduler
 
         public delegate void ServiceIsDueEventHandler(object sender, ServiceSchedulerEventArgs e);
 
+
+        /// <summary>
+        /// Gets triggered whenever a service is due for execution
+        /// </summary>
         public event ServiceIsDueEventHandler ServiceIsDue;
         protected virtual Task OnServiceIsDueAsync(ServiceSchedulerEventArgs e)
         {
@@ -321,7 +352,9 @@ namespace Com.H.Threading.Scheduler
         #region OnError
 
         public delegate void ErrorEventHandler(object sender, ServiceSchedularErrorEventArgs e);
-
+        /// <summary>
+        /// Gets triggered whenever there is an error that might get supressed if retry on error is enabled
+        /// </summary>
         public event ErrorEventHandler Error;
         protected virtual Task OnErrorAsync(ServiceSchedularErrorEventArgs e)
         {

@@ -4,10 +4,11 @@ using System.Text;
 using System.Xml.Linq;
 using System.Linq;
 using System.Globalization;
-using Com.H.Net;
-using Com.H.Text;
 using System.Threading;
 using Com.H.Security.Cryptography;
+using System.Collections.Concurrent;
+using Com.H.Data;
+using Com.H.Linq;
 
 namespace Com.H.Threading.Scheduler
 {
@@ -15,69 +16,21 @@ namespace Com.H.Threading.Scheduler
     {
         #region properties
         
-        public string UniqueKey { get; set; }
-        private XElement Element { get; set; }
-        private UriContentSettings UriSettings { get; set; }
+        public string UniqueKey { get; init; }
+        private XElement Element { get; init; }
+        public string RawValue { get; init; }
+        public ContentSettings ContentSettings { get; init; }
         private CancellationTokenSource Cts { get; set; }
         private bool disposedValue;
-        public object DataModel { get; private set; }
-        public string Name { get; private set; }
-        
-        public string GetValue()
-        {
-            try
-            {
-                if (this.UriSettings.UriTypeContent == UriContentType.No)
-                    return this.Element.Fill(this.DataModel);
-                if (
-
-                        this.UriSettings.UriTypeContent == UriContentType.Yes
-                        && !Uri.IsWellFormedUriString(this.Element.Fill(this.DataModel), UriKind.Absolute)
-                    )
-                {
-                    throw new FormatException(
-                        $"Invalid uri format for {this.Name}: {this.Element.Fill(this.DataModel)}");
-                }
-                if (this.UriSettings.CachePeriod == UriContentCachePeriod.None)
-                {
-                    return new Uri(this.Element.Fill(this.DataModel))
-                        .GetContentAsync(this.Cts?.Token,
-                        this.UriSettings.Referer, this.UriSettings.UserAgent)
-                        .GetAwaiter().GetResult();
-                }
-                if (this.Cache == null)
-                    this.Cache = new CachedRun();
-                Func<string> GetContent = () =>
-                {
-                    var value = new Uri(this.Element.Fill(this.DataModel)).GetContentAsync(
-                                this.Cts?.Token, this.UriSettings.Referer,
-                                this.UriSettings.UserAgent)
-                        .GetAwaiter().GetResult();
-                    if (value == null)
-                        throw new TimeoutException(
-                            $"Uri settings retrieval timed-out for {this.Name}: {this.Element.Fill(this.DataModel)}");
-                    return value;
-                };
-                return this.UriSettings.CachePeriod ==
-                    UriContentCachePeriod.Miliseconds ?
-                    this.Cache.Run<string>(GetContent,
-                        TimeSpan.FromMilliseconds((int)this.UriSettings.CacheInMilisec),
-                            this.Name)
-                    : this.Cache.Run<string>(GetContent,
-                        DateTime.Today.AddDays(1), this.Name);
-
-            }
-            catch
-            {
-                throw;
-            }
-
-        }
-        public IServiceItem Parent { get; private set; }
-        public IServiceItemAttr Attributes { get; private set; }
-        public ICollection<IServiceItem> Children { get; private set; }
-        public IServiceControlProperties Schedule { get; private set; }
+        public DefaultVars Vars { get; init; }
+        public string Name { get; init; }
+        public string FullName { get; init; }
+        public IServiceItem Parent { get; init; }
+        public IServiceItemAttr Attributes { get; init; }
+        public ICollection<IServiceItem> Children { get; init; }
+        public IServiceControlProperties Schedule { get; init; }
         private CachedRun Cache { get; set; }
+        public IServiceCollection AllServices { get; init; }
 
         #endregion
 
@@ -98,44 +51,129 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
         #region constructor
-
-        public XmlServiceItem(XElement element, IServiceItem parent = null, CancellationToken? token = null)
+        public static void Debug()
         {
+            Console.WriteLine("test");
+        }
+        public XmlServiceItem(IServiceCollection services, XElement element, IServiceItem parent = null, CancellationToken? token = null)
+        {
+            this.AllServices = services?? throw new ArgumentNullException(nameof(services));
             this.Element = element ?? throw new ArgumentNullException(nameof(element));
+            this.RawValue = this.Element.Value;
             this.Parent = parent;
             if (token != null) this.Cts = CancellationTokenSource
                     .CreateLinkedTokenSource((CancellationToken)token);
             this.Attributes = new XmlServiceItemAttr(this.Element);
             this.Name = this.Element.Name.LocalName;
-            this.UriSettings = this.Attributes.GetUriSettings();
+            if (this.Parent != null)
+                this.FullName = $"{(this.Parent?.Parent == null ? "" : this.Parent?.FullName)}/{this.Name}";
+            else this.FullName = "/";
+            this.ContentSettings = this.Attributes.GetContentSettings();
             this.UniqueKey = this.Element.ToString().ToSha256InBase64String();
+            XmlServiceItem schedulerItem = null;
+            this.Schedule = this.Element.Element("sys") == null ? parent?.Schedule
+                : new ServiceControlProperties(
+                    schedulerItem = new XmlServiceItem(this.AllServices, 
+                    this.Element.Element("sys"), this, this.Cts?.Token));
+
+            this.Vars = new DefaultVars()
+            {
+                Now = this.Schedule?.Now 
+                    ?? this.Parent?.Vars?.Now
+                    ?? DateTime.Now,
+                Tomorrow = this.Schedule?.Tomorrow 
+                    ?? this.Parent?.Vars?.Tomorrow 
+                    ?? DateTime.Today.AddDays(1),
+            };
 
 
-            this.Children = this.Element.Elements()?.Select(x =>
-            new XmlServiceItem(x, this, this.Cts?.Token))?.ToArray() ?? Array.Empty<XmlServiceItem>();
+            this.Children = this.Element.Elements()?
+                .Where(x=>!x.Name.LocalName.Equals("sys"))?
+                .Select(x =>
+            new XmlServiceItem(this.AllServices, x, this, this.Cts?.Token))?
+            .ToArray() 
+                ?? Array.Empty<XmlServiceItem>();
+            if (schedulerItem != null)
+                this.Children = this.Children.Union(new XmlServiceItem[] { schedulerItem }).ToArray();
 
-            this.Schedule = this["sys"] == null? this.Schedule = parent?.Schedule
-                : new ServiceControlProperties(this["sys"]);
-
-            this.DataModel = this.Schedule == null ?
-                this.DataModel = new
-                {
-                    Now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
-                    Today = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                    Tomorrow = DateTime.Today.AddDays(1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
-                }
-                : new
-                {
-                    Now = this.Schedule.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
-                    Today = this.Schedule.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                    Tomorrow = this.Schedule.Tomorrow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
-                };
                 
         }
         #endregion
 
 
+        #region get value
 
+        private ValueProcessorItem GetValueProcessorItem()
+        =>
+           Enumerable.Aggregate(
+                this.AllServices?.ValueProcessors?
+               .OrdinalFilter(
+                   this.Attributes["content_type"]?
+                   .Split(new string[] {",", "=>", "->", ">"}, 
+                       StringSplitOptions.RemoveEmptyEntries 
+                       | StringSplitOptions.TrimEntries))
+                ?? Array.Empty<ValueProcessor>()
+                , ValueProcessorItem.Parse(this)
+                .DateProcessor().CustomVarsProcessor()
+                , (i, n) => n(i, this.Cts?.Token)
+                .DateProcessor().CustomVarsProcessor()
+                );
+        
+
+        public string GetValue()
+        {
+            try
+            {
+                string GetContent()
+                {
+                    return this.GetValueProcessorItem()?.Value;
+                }
+                if (this.ContentSettings.CachePeriod == ContentCachePeriod.None)
+                    return GetContent();
+                if (this.Cache == null)
+                    this.Cache = new CachedRun();
+                return this.ContentSettings.CachePeriod ==
+                    ContentCachePeriod.Miliseconds ?
+                    this.Cache.Run(GetContent,
+                        TimeSpan.FromMilliseconds((int)this.ContentSettings.CacheInMilisec),
+                            this.FullName)
+                    : this.Cache.Run(GetContent,
+                        DateTime.Today.AddDays(1), this.FullName);
+            }
+            catch
+            {
+                throw;
+            }
+
+        }
+
+        public IEnumerable<T> GetModel<T>()
+        {
+            try
+            {
+                IEnumerable<T> GetContent()
+                {
+                    return (IEnumerable<T>) this.GetValueProcessorItem()?.Data;
+                }
+                if (this.ContentSettings.CachePeriod == ContentCachePeriod.None)
+                    return GetContent();
+                if (this.Cache == null)
+                    this.Cache = new CachedRun();
+                return this.ContentSettings.CachePeriod ==
+                    ContentCachePeriod.Miliseconds ?
+                    this.Cache.Run(GetContent,
+                        TimeSpan.FromMilliseconds((int)this.ContentSettings.CacheInMilisec),
+                            this.FullName)
+                    : this.Cache.Run(GetContent,
+                        DateTime.Today.AddDays(1), this.FullName);
+            }
+            catch
+            {
+                throw;
+            }
+
+        }
+        #endregion
 
         #region
         protected virtual void Dispose(bool disposing)

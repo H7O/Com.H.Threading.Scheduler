@@ -16,25 +16,23 @@ namespace Com.H.Threading.Scheduler
         /// </summary>
         string Name { get; }
         /// <summary>
+        /// Service item full name (includes parent names seerated by forward slash '/')
+        /// </summary>
+        string FullName { get; }
+
+        /// <summary>
         /// Service item value
         /// </summary>
         string GetValue();
         /// <summary>
+        /// Service item DataModel (used when model_type attribute is defined)
+        /// </summary>
+        /// <returns></returns>
+        IEnumerable<T> GetModel<T>();
+        /// <summary>
         /// Parent service item
         /// </summary>
         IServiceItem Parent { get; }
-        ///// <summary>
-        ///// Last successful execution
-        ///// </summary>
-        //DateTime? LastExecuted { get; }
-        ///// <summary>
-        ///// Last recorded error to be used when retry on error mechanism is enabled
-        ///// </summary>
-        //DateTime? LastError { get; set; }
-        ///// <summary>
-        ///// Error retries to be used when retry on error mechanism is enabled
-        ///// </summary>
-        //int ErrorRetries { get; set; }
         /// <summary>
         /// Service item attributes
         /// </summary>
@@ -48,7 +46,7 @@ namespace Com.H.Threading.Scheduler
         /// </summary>
         /// <param name="">Child item name</param>
         /// <returns></returns>
-        IServiceItem this[string name] {get;}
+        IServiceItem this[string name] { get; }
         /// <summary>
         /// Run schedule configuration
         /// </summary>
@@ -57,7 +55,17 @@ namespace Com.H.Threading.Scheduler
         /// <summary>
         /// DataModel to fill placeholders IServiceItem values
         /// </summary>
-        object DataModel { get; }
+        DefaultVars Vars { get; }
+
+        ContentSettings ContentSettings { get; }
+        /// <summary>
+        /// The raw un-processed value to be used in values post-processors.
+        /// </summary>
+        string RawValue { get; }
+        /// <summary>
+        /// Refernce to all existing services loaded from configuration
+        /// </summary>
+        IServiceCollection AllServices { get; }
 
     }
 }

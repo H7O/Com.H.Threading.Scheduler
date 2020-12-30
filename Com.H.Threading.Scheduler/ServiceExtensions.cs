@@ -8,86 +8,53 @@ using System.Xml.Linq;
 namespace Com.H.Threading.Scheduler
 {
     #region sub classes
-    public enum UriContentType
-    {
-        No = 0,
-        Yes = 1,
-        Auto = 2
-    }
-    public enum UriContentCachePeriod
+    public enum ContentCachePeriod
     {
         None = 0,
         OncePerDay = 1,
         Miliseconds = 2
     }
 
-    public class UriContentSettings
+    public class ContentSettings
     {
-        public UriContentType UriTypeContent { get; set; }
-        public UriContentCachePeriod CachePeriod { get; set; }
-        public string Referer { get; set; }
-        public string UserAgent { get; set; }
+        public string Type { get; set; }
+        public ContentCachePeriod CachePeriod { get; set; }
         public int? CacheInMilisec { get; set; }
     }
+
+
     #endregion
     public static class ServiceExtensions
     {
-        public static UriContentSettings GetUriSettings(this IServiceItemAttr attr)
+
+        public static ContentSettings GetContentSettings(this IServiceItemAttr attr)
         {
-            var uriSettings = new UriContentSettings()
-            { UriTypeContent = UriContentType.No, CachePeriod = UriContentCachePeriod.None };
-            if (attr == null) return uriSettings;
-            
-            // is_uri valid values: "yes", "true", and "auto", anything else is considered "no"
-            var isUriSettings = attr["uri_content"];
+            var settings = new ContentSettings()
+            { CachePeriod = ContentCachePeriod.None };
+            if (attr == null) return settings;
 
-            switch (isUriSettings)
-            {
-                case string uriType
-                    when uriType.EqualsIgnoreCase("yes") || uriType.EqualsIgnoreCase("true"):
-                    uriSettings.UriTypeContent = UriContentType.Yes;
-                    break;
-                case string uriType when uriType.EqualsIgnoreCase("auto"):
-                    uriSettings.UriTypeContent = UriContentType.Auto;
-                    break;
-                case null:
-                default: 
-                    uriSettings.UriTypeContent = UriContentType.No;
-                    break;
-            }
-
-            if (uriSettings.UriTypeContent == UriContentType.No) return uriSettings;
+            settings.Type = attr["content_type"];
 
             // cache type valid values: "none", ("once per day" / "daily" / "once_per_day"), or a numeric value represnting cache time in miliseconds.
-            var cachePeriod = attr["uri_content_cache"];
+            var cachePeriod = attr["content_cache"];
             if (cachePeriod != null && !cachePeriod.EqualsIgnoreCase("none"))
             {
                 if (new string[] { "once_per_day", "once per day", "daily" }.Any(x => x.EqualsIgnoreCase(cachePeriod)))
-                    uriSettings.CachePeriod = UriContentCachePeriod.OncePerDay;
+                    settings.CachePeriod = ContentCachePeriod.OncePerDay;
                 else
                 {
                     if (int.TryParse(cachePeriod, out int cacheInMilisec)
                         && cacheInMilisec > 0
                         )
                     {
-                        uriSettings.CachePeriod = UriContentCachePeriod.Miliseconds;
-                        uriSettings.CacheInMilisec = cacheInMilisec;
+                        settings.CachePeriod = ContentCachePeriod.Miliseconds;
+                        settings.CacheInMilisec = cacheInMilisec;
                     }
                 }
             }
-            uriSettings.UserAgent = attr["uri_user_agent"];
-            uriSettings.Referer = attr["uri_referer"];
-
-            return uriSettings;
-
+            return settings;
         }
 
-        public static string Fill(this XElement src, object dataModel)
-            => src?.Value?.Fill(dataModel, "{H{", "}}");
-        
-
-
-        
 
 
     }

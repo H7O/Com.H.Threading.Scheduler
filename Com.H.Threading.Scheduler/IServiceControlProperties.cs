@@ -97,12 +97,19 @@ namespace Com.H.Threading.Scheduler
 
         /// <summary>
         /// A custom DateTime to override DateTime.Now when filling custom placeholders for 
-        /// {H{now}} {H{today}} {H{tomorrow}}
+        /// {now{dd MMM, yyyy}} 
         /// </summary>
         DateTime Now { get; }
 
         DateTime Today { get; }
         DateTime Tomorrow { get; }
+
+        /// <summary>
+        /// Loops execution of the task by the number of items in the IEnumerable.
+        /// Properties within the dynamic object are replaced in all tags using
+        /// the following var format: {var{property_name}}
+        /// </summary>
+        public IEnumerable<dynamic> Repeat { get; }
 
     }
 }
