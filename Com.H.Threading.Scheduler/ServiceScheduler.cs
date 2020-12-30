@@ -113,7 +113,7 @@ namespace Com.H.Threading.Scheduler
             this.Cts = cancellationToken == null
                 ? new CancellationTokenSource()
                 : CancellationTokenSource.CreateLinkedTokenSource(
-                    (CancellationToken) cancellationToken);
+                    (CancellationToken)cancellationToken);
             return Cancellable.CancellableRunAsync(MonitorServices, this.Cts.Token);
         }
         /// <summary>
@@ -158,14 +158,14 @@ namespace Com.H.Threading.Scheduler
             {
                 // check if service is eligible to run including retry on error status (if failed to run in an earlier attempt and the schedule
                 // for when to retry and retry max attempts).
-                
+
 
                 if (!this.IsDue(service)) return;
-                
-                
+
+
                 void RunService()
                 {
-                    
+
                     if (this.Cts.IsCancellationRequested) return;
 
                     // todo: threaded having continuewith to check
@@ -185,12 +185,19 @@ namespace Com.H.Threading.Scheduler
                 if (service.Schedule?.Repeat != null)
                     foreach (var repeatDataModel in service.Schedule?.Repeat)
                     {
-                        service.Vars.Custom = repeatDataModel;
+                        _ = Enumerable.Aggregate(service.Children,
+                            service,
+                            (i, n) =>
+                            {
+                                i.Vars.Custom = repeatDataModel;
+                                return n;
+                            });
+
                         RunService();
                         // todo: between repeat sleep timer goes here
                     }
                 else RunService();
-                
+
                 // log successful run, and reset retry on error logic in case it was previously set.
                 this.TimeLog[service.UniqueKey].LastExecuted = DateTime.Now;
                 this.TimeLog[service.UniqueKey].ErrorCount = 0;
@@ -214,7 +221,7 @@ namespace Com.H.Threading.Scheduler
         private bool IsDue(IServiceItem item)
         {
             if (item?.Schedule == null) return false;
-            
+
 
             DateTime timeNow = DateTime.Now;
 
