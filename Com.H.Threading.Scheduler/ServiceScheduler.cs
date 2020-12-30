@@ -185,13 +185,13 @@ namespace Com.H.Threading.Scheduler
                 if (service.Schedule?.Repeat != null)
                     foreach (var repeatDataModel in service.Schedule?.Repeat)
                     {
-                        _ = Enumerable.Aggregate(service.Children,
-                            service,
-                            (i, n) =>
-                            {
-                                i.Vars.Custom = repeatDataModel;
-                                return n;
-                            });
+                        IEnumerable<IServiceItem> AllChildren(IServiceItem item)
+                        {
+                            return (item.Children?.SelectMany(x=>AllChildren(x))??
+                                Enumerable.Empty<IServiceItem>()).Append(item);
+                        }
+                        foreach (var child in AllChildren(service))
+                            child.Vars.Custom = repeatDataModel;
 
                         RunService();
                         // todo: between repeat sleep timer goes here
