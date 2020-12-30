@@ -183,18 +183,13 @@ namespace Com.H.Threading.Scheduler
                 }
 
                 if (service.Schedule?.Repeat != null)
-                    foreach(var repeatDataModel in service.Schedule?.Repeat)
+                    foreach (var repeatDataModel in service.Schedule?.Repeat)
                     {
                         service.Vars.Custom = repeatDataModel;
                         RunService();
                         // todo: between repeat sleep timer goes here
                     }
-
-
-
-                
-
-                
+                else RunService();
                 
                 // log successful run, and reset retry on error logic in case it was previously set.
                 this.TimeLog[service.UniqueKey].LastExecuted = DateTime.Now;

@@ -27,7 +27,7 @@ namespace Com.H.Threading.Scheduler
         public string FullName { get; init; }
         public IServiceItem Parent { get; init; }
         public IServiceItemAttr Attributes { get; init; }
-        public ICollection<IServiceItem> Children { get; init; }
+        public ICollection<IServiceItem> Children { get; private set; }
         public IServiceControlProperties Schedule { get; init; }
         private CachedRun Cache { get; set; }
         public IServiceCollection AllServices { get; init; }
@@ -108,7 +108,7 @@ namespace Com.H.Threading.Scheduler
            Enumerable.Aggregate(
                 this.AllServices?.ValueProcessors?
                .OrdinalFilter(
-                   this.Attributes["content_type"]?
+                   this.ContentSettings?.Type?
                    .Split(new string[] {",", "=>", "->", ">"}, 
                        StringSplitOptions.RemoveEmptyEntries 
                        | StringSplitOptions.TrimEntries))
