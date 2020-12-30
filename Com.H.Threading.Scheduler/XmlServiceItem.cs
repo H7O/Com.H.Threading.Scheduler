@@ -51,10 +51,6 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
         #region constructor
-        public static void Debug()
-        {
-            Console.WriteLine("test");
-        }
         public XmlServiceItem(IServiceCollection services, XElement element, IServiceItem parent = null, CancellationToken? token = null)
         {
             this.AllServices = services?? throw new ArgumentNullException(nameof(services));

@@ -195,7 +195,7 @@ namespace Com.H.Threading.Scheduler
                             child.Vars.Custom = repeatDataModel;
 
                         RunService();
-                        // todo: between repeat sleep timer goes here
+                        // todo: repeat sleep interval goes here
                     }
                 else RunService();
 
