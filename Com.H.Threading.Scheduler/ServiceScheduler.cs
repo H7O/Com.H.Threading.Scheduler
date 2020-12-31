@@ -183,20 +183,31 @@ namespace Com.H.Threading.Scheduler
                 }
 
                 if (service.Schedule?.Repeat != null)
+                {
+                    AtomicGate delaySwitch = new AtomicGate();
                     foreach (var repeatDataModel in service.Schedule?.Repeat)
                     {
+                        if (service.Schedule?.RepeatDelayInterval > 0
+                            && !delaySwitch.TryOpen())
+                        {
+                            if (this.Cts?.Token != null)
+                                Task.Delay((int)service.Schedule.RepeatDelayInterval, (CancellationToken)this.Cts.Token)
+                                    .GetAwaiter().GetResult();
+                            else Task.Delay((int)service.Schedule.RepeatDelayInterval)
+                                    .GetAwaiter().GetResult();
+                        }
+                        if (this.Cts.IsCancellationRequested) return;
                         IEnumerable<IServiceItem> AllChildren(IServiceItem item)
                         {
-                            return (item.Children?.SelectMany(x=>AllChildren(x))??
+                            return (item.Children?.SelectMany(x => AllChildren(x)) ??
                                 Enumerable.Empty<IServiceItem>()).Append(item);
                         }
                         foreach (var child in AllChildren(service)
-                            .Where(x=>x.Vars?.Custom == null))
+                            .Where(x => x.Vars?.Custom == null))
                             child.Vars.Custom = repeatDataModel;
-
                         RunService();
-                        // todo: repeat sleep interval goes here
                     }
+                }
                 else RunService();
 
                 // log successful run, and reset retry on error logic in case it was previously set.

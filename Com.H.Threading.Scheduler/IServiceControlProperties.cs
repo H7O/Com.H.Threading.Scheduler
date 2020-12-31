@@ -110,6 +110,10 @@ namespace Com.H.Threading.Scheduler
         /// the following var format: {var{property_name}}
         /// </summary>
         public IEnumerable<dynamic> Repeat { get; }
+        /// <summary>
+        /// Used in conjunction with Repeat. Introduces a delay interval among iterative repeats.
+        /// </summary>
+        public int? RepeatDelayInterval { get; }
 
     }
 }

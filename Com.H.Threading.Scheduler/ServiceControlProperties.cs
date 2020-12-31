@@ -41,6 +41,20 @@ namespace Com.H.Threading.Scheduler
                     //                    ).CsvDataModelProcessor().Item.Vars.Custom;
             
         }
+
+        public int? RepeatDelayInterval
+        {
+            get
+            {
+                try
+                {
+                    return this.ServiceItem["repeat"]?.Attributes["delay_interval"] == null ? null
+                        : int.Parse(this.ServiceItem["repeat"]?.Attributes["delay_interval"]);
+                }
+                catch { }
+                return null;
+            }
+        }
         public DateTime? NotBefore
         {
             get
