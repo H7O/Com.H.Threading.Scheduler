@@ -61,7 +61,7 @@ namespace Com.H.Threading.Scheduler.VP
 
         public static ValueProcessorItem DefaultVarsProcessor(this ValueProcessorItem valueItem)
         {
-            if (string.IsNullOrWhiteSpace(valueItem.Value = valueItem.Value ?? valueItem?.Item?.RawValue))
+            if (string.IsNullOrWhiteSpace(valueItem.Value ??= valueItem?.Item?.RawValue))
                 return valueItem;
             valueItem.Value = valueItem.Value.FillDate(valueItem.Item.Vars?.Now, "{now{")
                 .FillDate(valueItem.Item.Vars?.Tomorrow, "{tomorrow{")
@@ -74,7 +74,7 @@ namespace Com.H.Threading.Scheduler.VP
 
         public static ValueProcessorItem CustomVarsProcessor(this ValueProcessorItem valueItem)
         {
-            if (string.IsNullOrWhiteSpace(valueItem.Value = valueItem.Value ?? valueItem?.Item?.RawValue)
+            if (string.IsNullOrWhiteSpace(valueItem.Value ??= valueItem?.Item?.RawValue)
                 ||
                 valueItem.Item.Vars?.Custom == null
                 )
