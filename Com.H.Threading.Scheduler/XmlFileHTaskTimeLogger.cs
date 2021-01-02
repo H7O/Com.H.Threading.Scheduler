@@ -12,7 +12,7 @@ using System.Xml.Linq;
 
 namespace Com.H.Threading.Scheduler
 {
-    public class XmlFileServiceTimeLogger : IServiceTimeLogger
+    public class XmlFileHTaskTimeLogger : IHTaskTimeLogger
     {
         #region properties
         private string LogFilePath { get; set; }
@@ -25,11 +25,11 @@ namespace Com.H.Threading.Scheduler
         /// <summary>
         /// If the constructor is called without providing logFilePath, the logger will revert to memory only logs.
         /// This means, on a shutdown and restart of the application, the schedular won't pickup from where it left off.
-        /// i.e. any services that already ran throughout the day before the shutdown would run again after the restart 
+        /// i.e. any tasks that already ran throughout the day before the shutdown would run again after the restart 
         /// as there won't be a perminant log referece of them to load from disk after restarting.
         /// </summary>
         /// <param name="logFilePath"></param>
-        public XmlFileServiceTimeLogger(string logFilePath = null)
+        public XmlFileHTaskTimeLogger(string logFilePath = null)
         {
             this.LogFilePath = logFilePath;
             this.RWLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);

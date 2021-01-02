@@ -11,18 +11,18 @@ using Com.H.Text;
 
 namespace Com.H.Threading.Scheduler
 {
-    public class ServiceScheduler : IDisposable
+    public class HTaskScheduler : IDisposable
     {
 
         #region properties
         /// <summary>
-        /// The time interval in miliseconds of how often the schedular checks on services eligibility to run.
+        /// The time interval in miliseconds of how often the schedular checks on tasks eligibility to run.
         /// Default value is 1000 miliseconds
         /// </summary>
         public int TickInterval { get; set; }
         private string FilePath { get; set; }
-        private IServiceTimeLogger TimeLog { get; set; }
-        private IServiceCollection Services { get; set; }
+        private IHTaskTimeLogger TimeLog { get; set; }
+        private IHTaskCollection Tasks { get; set; }
         private CancellationTokenSource Cts { get; set; }
         private AtomicGate RunSwitch { get; set; }
         private TrafficController ThreadTraffic { get; set; }
@@ -31,14 +31,14 @@ namespace Com.H.Threading.Scheduler
 
         #region constructor
         /// <summary>
-        /// Default constructor that uses a local xml config file to load services configuration.
+        /// Default constructor that uses a local xml config file to load tasks configuration.
         /// For custom configuration from Database, Json files, etc.. implement 
-        /// IServiceCollection and IServiceTimeLog interfaces and make use of the overloaded constructor
+        /// IHTaskCollection and IHTaskTimeLog interfaces and make use of the overloaded constructor
         /// that accepts those interfaces to integrate your custom config / logging workflow with the schedular
         /// framework.
         /// </summary>
         /// <param name="xmlConfigFilePath"></param>
-        public ServiceScheduler(string xmlConfigFilePath)
+        public HTaskScheduler(string xmlConfigFilePath)
         {
             if (string.IsNullOrWhiteSpace(xmlConfigFilePath))
                 throw new ArgumentNullException(nameof(xmlConfigFilePath));
@@ -51,19 +51,19 @@ namespace Com.H.Threading.Scheduler
         }
 
         /// <summary>
-        /// You can make use of this constructor to provide your implemnetation of the IEnumerable<IServiceItem>
-        /// and IServiceTimeLog if you wish to incorporate your config / loggin workflow into this schedular
+        /// You can make use of this constructor to provide your implemnetation of the IEnumerable<IHTaskItem>
+        /// and IHTaskTimeLog if you wish to incorporate your config / loggin workflow into this schedular
         /// framework.
         /// Leaving timeLog empty defaults the schedular to do logging in memory only. The disadvantage is 
         /// after a restart from a shutdown to the app, the schedular won't have information on what 
-        /// service it already ran prior the shutdown which would result in running the again.
+        /// task it already ran prior the shutdown which would result in running the again.
         /// </summary>
-        /// <param name="services"></param>
+        /// <param name="tasks"></param>
         /// <param name="timeLog"></param>
-        public ServiceScheduler(IServiceCollection services, IServiceTimeLogger timeLog = null)
+        public HTaskScheduler(IHTaskCollection tasks, IHTaskTimeLogger timeLog = null)
         {
-            this.Services = services ?? throw new ArgumentNullException(nameof(services));
-            this.TimeLog = timeLog ?? new XmlFileServiceTimeLogger();
+            this.Tasks = tasks ?? throw new ArgumentNullException(nameof(tasks));
+            this.TimeLog = timeLog ?? new XmlFileHTaskTimeLogger();
             this.ThreadTraffic = new TrafficController();
             this.TickInterval = 1000;
             this.RunSwitch = new AtomicGate();
@@ -74,30 +74,30 @@ namespace Com.H.Threading.Scheduler
         private void Load()
         {
             if (string.IsNullOrWhiteSpace(this.FilePath)
-                && (this.Services?.Any() == false)
+                && (this.Tasks?.Any() == false)
                 ) throw new ArgumentNullException(
-                    "no file path or services defined");
+                    "no file path or tasks defined");
 
             if (string.IsNullOrWhiteSpace(this.FilePath) == false
                 && File.Exists(this.FilePath) == false)
             {
-                if (this.Services?.Any() == false)
+                if (this.Tasks?.Any() == false)
                     throw new FileNotFoundException(this.FilePath);
                 return;
             }
 
-            this.Services = new XmlFileServiceCollection(this.FilePath);
-            this.TimeLog = new XmlFileServiceTimeLogger(
+            this.Tasks = new XmlFileHTaskCollection(this.FilePath);
+            this.TimeLog = new XmlFileHTaskTimeLogger(
                 Path.Combine(
                     Directory.GetParent(this.FilePath).FullName,
                     new FileInfo(this.FilePath).Name + ".log"));
-            foreach (var service in this.Services.Where(x => x.Schedule.IgnoreLogOnRestart
+            foreach (var task in this.Tasks.Where(x => x.Schedule.IgnoreLogOnRestart
                 && this.TimeLog[x.UniqueKey] != null
                 ))
             {
-                this.TimeLog[service.UniqueKey].LastExecuted = null;
-                this.TimeLog[service.UniqueKey].ErrorCount = 0;
-                this.TimeLog[service.UniqueKey].LastError = null;
+                this.TimeLog[task.UniqueKey].LastExecuted = null;
+                this.TimeLog[task.UniqueKey].ErrorCount = 0;
+                this.TimeLog[task.UniqueKey].LastError = null;
             }
 
         }
@@ -105,9 +105,9 @@ namespace Com.H.Threading.Scheduler
 
         #region start / stop
         /// <summary>
-        /// Start monitoring scheduled services in order to trigger IsServiceDue event when services are ready for execution.
+        /// Start monitoring scheduled tasks in order to trigger IsTaskDue event when tasks are ready for execution.
         /// </summary>
-        /// <param name="cancellationToken">If provided, the monitoring force stops all running services</param>
+        /// <param name="cancellationToken">If provided, the monitoring force stops all running tasks</param>
         /// <returns>a running monitoring task</returns>
         public Task Start(CancellationToken? cancellationToken = null)
         {
@@ -117,10 +117,10 @@ namespace Com.H.Threading.Scheduler
                 ? new CancellationTokenSource()
                 : CancellationTokenSource.CreateLinkedTokenSource(
                     (CancellationToken)cancellationToken);
-            return Cancellable.CancellableRunAsync(MonitorServices, this.Cts.Token);
+            return Cancellable.CancellableRunAsync(MonitorTasks, this.Cts.Token);
         }
         /// <summary>
-        /// Stops monitoring services schedule, and terminates running services.
+        /// Stops monitoring tasks schedule, and terminates running tasks.
         /// </summary>
         public void Stop()
         {
@@ -136,37 +136,37 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
         #region monitor
-        private void MonitorServices()
+        private void MonitorTasks()
         {
             while (!this.Cts.IsCancellationRequested)
             {
-                foreach (var service in this.Services)
+                foreach (var task in this.Tasks)
                 {
                     Cancellable.CancellableRunAsync(() =>
                     {
                         this.ThreadTraffic.QueueCall(() =>
                         {
-                            Process(service);
-                        }, 0, service.UniqueKey);
+                            Process(task);
+                        }, 0, task.UniqueKey);
                     }, this.Cts.Token);
                 }
                 Task.Delay(this.TickInterval, this.Cts.Token).GetAwaiter().GetResult();
             }
         }
 
-        private void Process(IServiceItem service)
+        private void Process(IHTaskItem task)
         {
-            ServiceSchedulerEventArgs evArgs = null;
+            HTaskSchedulerEventArgs evArgs = null;
             try
             {
-                // check if service is eligible to run including retry on error status (if failed to run in an earlier attempt and the schedule
+                // check if task is eligible to run including retry on error status (if failed to run in an earlier attempt and the schedule
                 // for when to retry and retry max attempts).
 
 
-                if (!this.IsDue(service)) return;
+                if (!this.IsDue(task)) return;
 
 
-                void RunService()
+                void RunTask()
                 {
 
                     if (this.Cts.IsCancellationRequested) return;
@@ -174,68 +174,68 @@ namespace Com.H.Threading.Scheduler
                     // todo: threaded having continuewith to check
                     // run status
 
-                    evArgs = new ServiceSchedulerEventArgs(
+                    evArgs = new HTaskSchedulerEventArgs(
                         this,
-                        service,
+                        task,
                         this.Cts.Token
                         );
 
                     // if eligible to run (and has no previous error logged), trigger synchronous event
-                    this.OnServiceIsDueAsync(evArgs)
+                    this.OnTaskIsDueAsync(evArgs)
                         .GetAwaiter().GetResult();
                 }
 
-                if (service.Schedule?.Repeat != null)
+                if (task.Schedule?.Repeat != null)
                 {
                     AtomicGate delaySwitch = new AtomicGate();
 
-                    foreach (var repeatDataModel in service.Schedule?.Repeat.EnsureEnumerable())
+                    foreach (var repeatDataModel in task.Schedule?.Repeat.EnsureEnumerable())
                     {
-                        if (service.Schedule?.RepeatDelayInterval > 0
+                        if (task.Schedule?.RepeatDelayInterval > 0
                             && !delaySwitch.TryOpen())
                         {
                             if (this.Cts?.Token != null)
-                                Task.Delay((int)service.Schedule.RepeatDelayInterval, (CancellationToken)this.Cts.Token)
+                                Task.Delay((int)task.Schedule.RepeatDelayInterval, (CancellationToken)this.Cts.Token)
                                     .GetAwaiter().GetResult();
-                            else Task.Delay((int)service.Schedule.RepeatDelayInterval)
+                            else Task.Delay((int)task.Schedule.RepeatDelayInterval)
                                     .GetAwaiter().GetResult();
                         }
                         if (this.Cts.IsCancellationRequested) return;
-                        IEnumerable<IServiceItem> AllChildren(IServiceItem item)
+                        IEnumerable<IHTaskItem> AllChildren(IHTaskItem item)
                         {
                             return (item.Children?.SelectMany(x => AllChildren(x)) ??
-                                Enumerable.Empty<IServiceItem>()).Append(item);
+                                Enumerable.Empty<IHTaskItem>()).Append(item);
                         }
-                        foreach (var child in AllChildren(service)
+                        foreach (var child in AllChildren(task)
                             //.Where(x => x.Vars?.Custom == null)
                             )
                             child.Vars.Custom = repeatDataModel;
-                        RunService();
+                        RunTask();
                     }
                 }
-                else RunService();
+                else RunTask();
 
                 // log successful run, and reset retry on error logic in case it was previously set.
-                this.TimeLog[service.UniqueKey].LastExecuted = DateTime.Now;
-                this.TimeLog[service.UniqueKey].ErrorCount = 0;
-                this.TimeLog[service.UniqueKey].LastError = null;
+                this.TimeLog[task.UniqueKey].LastExecuted = DateTime.Now;
+                this.TimeLog[task.UniqueKey].ErrorCount = 0;
+                this.TimeLog[task.UniqueKey].LastError = null;
                 this.TimeLog.Save();
             }
             catch (Exception ex)
             {
                 // catch errors within the thread, and check if retry on error is enabled
                 // if enabled, don't throw exception, trigger OnErrorEvent async, then log error retry attempts and last error
-                this.OnErrorAsync(new ServiceSchedularErrorEventArgs(this, ex, evArgs));
-                if (service.Schedule.RetryAttemptsAfterError == null) throw;
-                this.TimeLog[service.UniqueKey].ErrorCount++;
-                this.TimeLog[service.UniqueKey].LastError = DateTime.Now;
+                this.OnErrorAsync(new HTaskSchedularErrorEventArgs(this, ex, evArgs));
+                if (task.Schedule.RetryAttemptsAfterError == null) throw;
+                this.TimeLog[task.UniqueKey].ErrorCount++;
+                this.TimeLog[task.UniqueKey].LastError = DateTime.Now;
                 this.TimeLog.Save();
             }
 
         }
 
         #region is due
-        private bool IsDue(IServiceItem item)
+        private bool IsDue(IHTaskItem item)
         {
             if (item?.Schedule == null) return false;
 
@@ -348,21 +348,21 @@ namespace Com.H.Threading.Scheduler
         #endregion
         #region events
 
-        #region OnServiceIsDue
+        #region OnTaskIsDue
 
-        public delegate void ServiceIsDueEventHandler(object sender, ServiceSchedulerEventArgs e);
+        public delegate void TaskIsDueEventHandler(object sender, HTaskSchedulerEventArgs e);
 
 
         /// <summary>
-        /// Gets triggered whenever a service is due for execution
+        /// Gets triggered whenever a task is due for execution
         /// </summary>
-        public event ServiceIsDueEventHandler ServiceIsDue;
-        protected virtual Task OnServiceIsDueAsync(ServiceSchedulerEventArgs e)
+        public event TaskIsDueEventHandler TaskIsDue;
+        protected virtual Task OnTaskIsDueAsync(HTaskSchedulerEventArgs e)
         {
 
             if (e == null) return Task.CompletedTask;
             return Cancellable.CancellableRunAsync(
-                () => ServiceIsDue?.Invoke(e.Sender, e)
+                () => TaskIsDue?.Invoke(e.Sender, e)
                 , this.Cts.Token);
         }
 
@@ -370,12 +370,12 @@ namespace Com.H.Threading.Scheduler
 
         #region OnError
 
-        public delegate void ErrorEventHandler(object sender, ServiceSchedularErrorEventArgs e);
+        public delegate void ErrorEventHandler(object sender, HTaskSchedularErrorEventArgs e);
         /// <summary>
         /// Gets triggered whenever there is an error that might get supressed if retry on error is enabled
         /// </summary>
         public event ErrorEventHandler Error;
-        protected virtual Task OnErrorAsync(ServiceSchedularErrorEventArgs e)
+        protected virtual Task OnErrorAsync(HTaskSchedularErrorEventArgs e)
         {
             if (e == null) return Task.CompletedTask;
             return Cancellable.CancellableRunAsync(
@@ -414,7 +414,7 @@ namespace Com.H.Threading.Scheduler
         }
 
         // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~ServiceScheduler()
+        // ~HTaskScheduler()
         // {
         //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         //     Dispose(disposing: false);

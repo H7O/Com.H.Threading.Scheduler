@@ -10,12 +10,12 @@ using System.Xml.Linq;
 
 namespace Com.H.Threading.Scheduler
 {
-    public class ServiceControlProperties : IServiceControlProperties, IDisposable
+    public class HTaskControlProperties : IHTaskControlProperties, IDisposable
     {
         
 
         #region properties
-        private IServiceItem ServiceItem { get; set; }
+        private IHTaskItem TaskItem { get; set; }
         private CachedRun Cache { get; set; }
 
        
@@ -23,23 +23,14 @@ namespace Com.H.Threading.Scheduler
         {
             get
             {
-                if (this.ServiceItem["enabled"] == null) return true;
-                return this.ServiceItem["enabled"].GetValue()?.ContainsIgnoreCase("true")??false;
+                if (this.TaskItem["enabled"] == null) return true;
+                return this.TaskItem["enabled"].GetValue()?.ContainsIgnoreCase("true")??false;
             }
         }
 
         public dynamic Repeat
         {
-            get => this.ServiceItem["repeat"]?.GetModel<dynamic>();
-            //get =>
-            //    this.ServiceItem["repeat"] == null? null
-                    //: (IEnumerable<dynamic>) Enumerable.Aggregate(
-                    //                    this.ServiceItem.AllServices?.ValueProcessors
-                    //                    ?? new ConcurrentDictionary<string, Func<ValueProcessorItem, CancellationToken?, ValueProcessorItem>>()
-                    //                    , ValueProcessorItem.Parse(this.ServiceItem["repeat"]).DateProcessor()
-                    //                    , (i, n) => n.Value(i, this.CToken).DateProcessor()
-                    //                    ).CsvDataModelProcessor().Item.Vars.Custom;
-            
+            get => this.TaskItem["repeat"]?.GetModel<dynamic>();
         }
 
         public int? RepeatDelayInterval
@@ -48,8 +39,8 @@ namespace Com.H.Threading.Scheduler
             {
                 try
                 {
-                    return this.ServiceItem["repeat"]?.Attributes["delay_interval"] == null ? null
-                        : int.Parse(this.ServiceItem["repeat"]?.Attributes["delay_interval"]);
+                    return this.TaskItem["repeat"]?.Attributes["delay_interval"] == null ? null
+                        : int.Parse(this.TaskItem["repeat"]?.Attributes["delay_interval"]);
                 }
                 catch { }
                 return null;
@@ -59,7 +50,7 @@ namespace Com.H.Threading.Scheduler
         {
             get
             {
-                var item = this.ServiceItem["not_before"]?.GetValue();
+                var item = this.TaskItem["not_before"]?.GetValue();
                 if (item == null) return null;
                 if (DateTime.TryParse(item, out DateTime notBefore)) return notBefore;
                 return null;
@@ -69,7 +60,7 @@ namespace Com.H.Threading.Scheduler
         {
             get
             {
-                var item = this.ServiceItem["not_after"]?.GetValue();
+                var item = this.TaskItem["not_after"]?.GetValue();
                 if (item == null) return null;
                 if (DateTime.TryParse(item, out DateTime notAfter)) return notAfter;
                 return null;
@@ -80,24 +71,24 @@ namespace Com.H.Threading.Scheduler
         {
             get
             {
-                var item = this.ServiceItem["date"]?.GetValue();
+                var item = this.TaskItem["date"]?.GetValue();
                 if (item == null) return null;
                 if (DateTime.TryParse(item, out DateTime exactDateTime)) return exactDateTime.Date;
                 return null;
             }
         }
 
-        public IEnumerable<int> DaysOfYear => this.ServiceItem["doy"]?.GetValue()?.ExtractRangeInts();
+        public IEnumerable<int> DaysOfYear => this.TaskItem["doy"]?.GetValue()?.ExtractRangeInts();
 
-        public IEnumerable<int> DaysOfMonth => this.ServiceItem["dom"]?.GetValue()?.ExtractRangeInts();
-        public IEnumerable<string> DaysOfWeek => this.ServiceItem["dow"]?.GetValue()?
+        public IEnumerable<int> DaysOfMonth => this.TaskItem["dom"]?.GetValue()?.ExtractRangeInts();
+        public IEnumerable<string> DaysOfWeek => this.TaskItem["dow"]?.GetValue()?
             .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
             .Select(x => x.Trim().ToUpper(CultureInfo.InvariantCulture));
         public bool? LastDayOfMonth
         {
             get
             {
-                var item = this.ServiceItem["eom"]?.GetValue();
+                var item = this.TaskItem["eom"]?.GetValue();
                 if (item == null) return null;
                 if (item.ContainsIgnoreCase("true")) return true;
                 if (item.ContainsIgnoreCase("false")) return false;
@@ -109,7 +100,7 @@ namespace Com.H.Threading.Scheduler
         {
             get
             {
-                var item = this.ServiceItem["bom"]?.GetValue();
+                var item = this.TaskItem["bom"]?.GetValue();
                 if (item == null) return null;
                 if (item.ContainsIgnoreCase("true")) return true;
                 if (item.ContainsIgnoreCase("false")) return false;
@@ -121,7 +112,7 @@ namespace Com.H.Threading.Scheduler
         {
             get
             {
-                var item = this.ServiceItem["time"]?.GetValue();
+                var item = this.TaskItem["time"]?.GetValue();
                 if (item == null) return null;
                 if (TimeSpan.TryParse(item, out TimeSpan value))
                     return value;
@@ -133,7 +124,7 @@ namespace Com.H.Threading.Scheduler
         {
             get
             {
-                var item = this.ServiceItem["until_time"]?.GetValue();
+                var item = this.TaskItem["until_time"]?.GetValue();
                 if (item == null) return null;
                 if (TimeSpan.TryParse(item, out TimeSpan value))
                     return value;
@@ -144,7 +135,7 @@ namespace Com.H.Threading.Scheduler
         {
             get
             {
-                var item = this.ServiceItem["interval"]?.GetValue();
+                var item = this.TaskItem["interval"]?.GetValue();
                 if (item == null) return null;
                 if (int.TryParse(item, out int value)) return value;
                 return null;
@@ -152,7 +143,7 @@ namespace Com.H.Threading.Scheduler
         }
 
         public bool IgnoreLogOnRestart
-            =>this.ServiceItem["ignore_log_on_restart"]?.GetValue()?.ContainsIgnoreCase("true") ?? false;
+            =>this.TaskItem["ignore_log_on_restart"]?.GetValue()?.ContainsIgnoreCase("true") ?? false;
 
 
 
@@ -160,7 +151,7 @@ namespace Com.H.Threading.Scheduler
         {
             get
             {
-                var item = this.ServiceItem["sleep_on_error"]?.GetValue();
+                var item = this.TaskItem["sleep_on_error"]?.GetValue();
                 if (item == null) return null;
                 if (int.TryParse(item, out int value)) return value;
                 return null;
@@ -170,7 +161,7 @@ namespace Com.H.Threading.Scheduler
         {
             get
             {
-                var item = this.ServiceItem["retry_attempts_on_error"]?.GetValue();
+                var item = this.TaskItem["retry_attempts_on_error"]?.GetValue();
                 if (item == null) return null;
                 if (int.TryParse(item, out int value)) return value;
                 return null;
@@ -181,7 +172,7 @@ namespace Com.H.Threading.Scheduler
         {
             get
             {
-                var item = this.ServiceItem["now"]?.GetValue();
+                var item = this.TaskItem["now"]?.GetValue();
                 if (item == null) return DateTime.Now;
                 if (DateTime.TryParse(item, out DateTime dateTime)) return dateTime;
                 return DateTime.Now;
@@ -195,8 +186,8 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
         #region constructor
-        public ServiceControlProperties(IServiceItem item)
-        => (this.ServiceItem, this.Cache) = (item, new CachedRun());
+        public HTaskControlProperties(IHTaskItem item)
+        => (this.TaskItem, this.Cache) = (item, new CachedRun());
 
         #endregion
 
@@ -222,7 +213,7 @@ namespace Com.H.Threading.Scheduler
         }
 
         // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~ServiceControlProperties()
+        // ~TaskControlProperties()
         // {
         //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         //     Dispose(disposing: false);

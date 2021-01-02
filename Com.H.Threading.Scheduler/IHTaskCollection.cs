@@ -10,7 +10,7 @@ namespace Com.H.Threading.Scheduler
     public delegate ValueProcessorItem ValueProcessor(ValueProcessorItem valueItem,
     CancellationToken? token = null);
 
-    public interface IServiceCollection : ICollection<IServiceItem>
+    public interface IHTaskCollection : ICollection<IHTaskItem>
     {
         ConcurrentDictionary<string, ValueProcessor> ValueProcessors { get; }
     }

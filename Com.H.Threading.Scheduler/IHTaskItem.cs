@@ -5,61 +5,61 @@ using System.Xml.Linq;
 
 namespace Com.H.Threading.Scheduler
 {
-    public interface IServiceItem
+    public interface IHTaskItem
     {
         /// <summary>
-        /// Auto generated unique key to be used by scheduler to distinguish services from each other.
+        /// Auto generated unique key to be used by scheduler to distinguish tasks from each other.
         /// </summary>
         string UniqueKey { get; }
         /// <summary>
-        /// Service item name
+        /// Task item name
         /// </summary>
         string Name { get; }
         /// <summary>
-        /// Service item full name (includes parent names seerated by forward slash '/')
+        /// Task item full name (includes parent names seerated by forward slash '/')
         /// </summary>
         string FullName { get; }
 
         /// <summary>
-        /// Service item value
+        /// Task item value
         /// </summary>
         string GetValue();
         /// <summary>
-        /// Service item DataModel (used when content_type attribute is defined)
+        /// Task item DataModel (used when content_type attribute is defined)
         /// </summary>
         /// <returns></returns>
         T GetModel<T>();
         /// <summary>
-        /// Service item DataModel (used when content_type attribute is defined)
+        /// Task item DataModel (used when content_type attribute is defined)
         /// if no content_type is defined, this method returns the output of GetValue()
         /// </summary>
         /// <returns></returns>
         dynamic GetModel() => GetModel<dynamic>()??GetValue();
         /// <summary>
-        /// Parent service item
+        /// Parent task item
         /// </summary>
-        IServiceItem Parent { get; }
+        IHTaskItem Parent { get; }
         /// <summary>
-        /// Service item attributes
+        /// Task item attributes
         /// </summary>
-        IServiceItemAttr Attributes { get; }
+        IHTaskItemAttr Attributes { get; }
         /// <summary>
         /// Child items
         /// </summary>
-        ICollection<IServiceItem> Children { get; }
+        ICollection<IHTaskItem> Children { get; }
         /// <summary>
         /// Returns a child item by name if available, otherwise returns null
         /// </summary>
         /// <param name="">Child item name</param>
         /// <returns></returns>
-        IServiceItem this[string name] { get; }
+        IHTaskItem this[string name] { get; }
         /// <summary>
         /// Run schedule configuration
         /// </summary>
-        IServiceControlProperties Schedule { get; }
+        IHTaskControlProperties Schedule { get; }
 
         /// <summary>
-        /// DataModel to fill placeholders IServiceItem values
+        /// DataModel to fill placeholders IHTaskItem values
         /// </summary>
         DefaultVars Vars { get; }
 
@@ -69,9 +69,9 @@ namespace Com.H.Threading.Scheduler
         /// </summary>
         string RawValue { get; }
         /// <summary>
-        /// Refernce to all existing services loaded from configuration
+        /// Refernce to all existing tasks loaded from configuration
         /// </summary>
-        IServiceCollection AllServices { get; }
+        IHTaskCollection AllTasks { get; }
 
     }
 }

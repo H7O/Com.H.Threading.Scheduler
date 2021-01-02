@@ -12,11 +12,11 @@ using Com.H.Threading.Scheduler.VP;
 namespace Com.H.Threading.Scheduler
 {
 
-    public class XmlFileServiceCollection : IServiceCollection
+    public class XmlFileHTaskCollection : IHTaskCollection
     {
         #region properties
         
-        private ICollection<IServiceItem> Services { get; set; }
+        private ICollection<IHTaskItem> Tasks { get; set; }
 
         /// <summary>
         /// Allows for adding custom value post processing logic when retrieving configuration values.
@@ -27,21 +27,21 @@ namespace Com.H.Threading.Scheduler
         /// By default, the engine adds UriValueProcessor that correspond to 'content_type' value of 'uri'
         /// </summary>
         public ConcurrentDictionary<string, ValueProcessor> ValueProcessors { get; private set; }
-        private DateTime? ServicesLastModified { get; set; }
+        private DateTime? TasksLastModified { get; set; }
         private string FilePath { get; set; }
-        private object ServicesLock { get; set; } = new object();
+        private object TaskLock { get; set; } = new object();
 
-        int ICollection<IServiceItem>.Count => throw new NotImplementedException();
+        int ICollection<IHTaskItem>.Count => throw new NotImplementedException();
 
-        bool ICollection<IServiceItem>.IsReadOnly => true;
+        bool ICollection<IHTaskItem>.IsReadOnly => true;
         #endregion
 
         #region constructor
-        public XmlFileServiceCollection(string serviceCollectionFilePath)
+        public XmlFileHTaskCollection(string taskCollectionFilePath)
         {
-            if (string.IsNullOrWhiteSpace(serviceCollectionFilePath))
-                throw new ArgumentNullException(nameof(serviceCollectionFilePath));
-            this.FilePath = serviceCollectionFilePath;
+            if (string.IsNullOrWhiteSpace(taskCollectionFilePath))
+                throw new ArgumentNullException(nameof(taskCollectionFilePath));
+            this.FilePath = taskCollectionFilePath;
             if (!File.Exists(this.FilePath))
                 throw new FileNotFoundException(this.FilePath);
             this.ValueProcessors = new ConcurrentDictionary<string, ValueProcessor>();
@@ -54,51 +54,51 @@ namespace Com.H.Threading.Scheduler
         }
         #endregion
         #region load from disk
-        private ICollection<IServiceItem> GetServices()
+        private ICollection<IHTaskItem> GetTasks()
         {
             if (!File.Exists(this.FilePath))
                 throw new FileNotFoundException(this.FilePath);
-            lock (this.ServicesLock)
+            lock (this.TaskLock)
             {
-                if (this.Services != null
-                        && this.ServicesLastModified != null
-                        && File.GetLastWriteTime(this.FilePath) <= this.ServicesLastModified)
-                    return this.Services;
+                if (this.Tasks != null
+                        && this.TasksLastModified != null
+                        && File.GetLastWriteTime(this.FilePath) <= this.TasksLastModified)
+                    return this.Tasks;
 
-                this.Services = XElement.Load(this.FilePath)
-                            .Elements().Select(x => new XmlServiceItem(this, x)).ToArray();
+                this.Tasks = XElement.Load(this.FilePath)
+                            .Elements().Select(x => new XmlHTaskItem(this, x)).ToArray();
 
-                this.ServicesLastModified = File.GetLastWriteTime(this.FilePath);
-                return this.Services;
+                this.TasksLastModified = File.GetLastWriteTime(this.FilePath);
+                return this.Tasks;
             }
         }
         #endregion
 
         #region IEnumerator
-        public IEnumerator<IServiceItem> GetEnumerator()
+        public IEnumerator<IHTaskItem> GetEnumerator()
         {
-            return this.GetServices()?.GetEnumerator();
+            return this.GetTasks()?.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable)this.GetServices())?.GetEnumerator();
+            return ((IEnumerable)this.GetTasks())?.GetEnumerator();
         }
 
-        void ICollection<IServiceItem>.Add(IServiceItem item)
+        void ICollection<IHTaskItem>.Add(IHTaskItem item)
             => throw new NotImplementedException();
-        void ICollection<IServiceItem>.Clear()
+        void ICollection<IHTaskItem>.Clear()
             => throw new NotImplementedException();
 
-        bool ICollection<IServiceItem>.Contains(IServiceItem item)
-            => this.GetServices()?.Contains(item) ?? false;
+        bool ICollection<IHTaskItem>.Contains(IHTaskItem item)
+            => this.GetTasks()?.Contains(item) ?? false;
 
 
-        void ICollection<IServiceItem>.CopyTo(IServiceItem[] array, int arrayIndex)
-        => this.GetServices()?.CopyTo(array, arrayIndex);
+        void ICollection<IHTaskItem>.CopyTo(IHTaskItem[] array, int arrayIndex)
+        => this.GetTasks()?.CopyTo(array, arrayIndex);
 
 
-        bool ICollection<IServiceItem>.Remove(IServiceItem item)
+        bool ICollection<IHTaskItem>.Remove(IHTaskItem item)
             => throw new NotImplementedException();
         #endregion
     }

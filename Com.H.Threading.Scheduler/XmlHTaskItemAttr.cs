@@ -7,7 +7,7 @@ using System.Xml.Linq;
 
 namespace Com.H.Threading.Scheduler
 {
-    public class XmlServiceItemAttr : IServiceItemAttr
+    public class XmlHTaskItemAttr : IHTaskItemAttr
     {
         public IDictionary<string, string> Items { get; private set; }
         public string this[string attr]
@@ -22,7 +22,7 @@ namespace Com.H.Threading.Scheduler
             }
         }
         
-        public XmlServiceItemAttr(XElement element)
+        public XmlHTaskItemAttr(XElement element)
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
             this.Items = element?.Attributes()?

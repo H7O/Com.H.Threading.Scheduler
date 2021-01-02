@@ -17,10 +17,10 @@ namespace Com.H.Threading.Scheduler.VP
 {
     public class ValueProcessorItem
     {
-        public IServiceItem Item { get; set; }
+        public IHTaskItem Item { get; set; }
         public string Value { get; set; }
         public dynamic Data { get; set; }
-        public static ValueProcessorItem Parse(IServiceItem item)
+        public static ValueProcessorItem Parse(IHTaskItem item)
             => new ValueProcessorItem()
             {
                 Item = item,

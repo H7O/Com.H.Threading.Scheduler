@@ -13,7 +13,7 @@ using Com.H.Threading.Scheduler.VP;
 
 namespace Com.H.Threading.Scheduler
 {
-    public class XmlServiceItem : IServiceItem, IDisposable
+    public class XmlHTaskItem : IHTaskItem, IDisposable
     {
         #region properties
         
@@ -26,17 +26,17 @@ namespace Com.H.Threading.Scheduler
         public DefaultVars Vars { get; init; }
         public string Name { get; init; }
         public string FullName { get; init; }
-        public IServiceItem Parent { get; init; }
-        public IServiceItemAttr Attributes { get; init; }
-        public ICollection<IServiceItem> Children { get; private set; }
-        public IServiceControlProperties Schedule { get; init; }
+        public IHTaskItem Parent { get; init; }
+        public IHTaskItemAttr Attributes { get; init; }
+        public ICollection<IHTaskItem> Children { get; private set; }
+        public IHTaskControlProperties Schedule { get; init; }
         private CachedRun Cache { get; set; }
-        public IServiceCollection AllServices { get; init; }
+        public IHTaskCollection AllTasks { get; init; }
 
         #endregion
 
         #region indexer
-        public IServiceItem this[string name]
+        public IHTaskItem this[string name]
         {
             get
             {
@@ -52,25 +52,25 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
         #region constructor
-        public XmlServiceItem(IServiceCollection services, XElement element, IServiceItem parent = null, CancellationToken? token = null)
+        public XmlHTaskItem(IHTaskCollection hTasks, XElement element, IHTaskItem parent = null, CancellationToken? token = null)
         {
-            this.AllServices = services?? throw new ArgumentNullException(nameof(services));
+            this.AllTasks = hTasks?? throw new ArgumentNullException(nameof(hTasks));
             this.Element = element ?? throw new ArgumentNullException(nameof(element));
             this.RawValue = this.Element.Value;
             this.Parent = parent;
             if (token != null) this.Cts = CancellationTokenSource
                     .CreateLinkedTokenSource((CancellationToken)token);
-            this.Attributes = new XmlServiceItemAttr(this.Element);
+            this.Attributes = new XmlHTaskItemAttr(this.Element);
             this.Name = this.Element.Name.LocalName;
             if (this.Parent != null)
                 this.FullName = $"{(this.Parent?.Parent == null ? "" : this.Parent?.FullName)}/{this.Name}";
             else this.FullName = "/";
             this.ContentSettings = this.Attributes.GetContentSettings();
             this.UniqueKey = this.Element.ToString().ToSha256InBase64String();
-            XmlServiceItem schedulerItem = null;
+            XmlHTaskItem schedulerItem = null;
             this.Schedule = this.Element.Element("sys") == null ? parent?.Schedule
-                : new ServiceControlProperties(
-                    schedulerItem = new XmlServiceItem(this.AllServices, 
+                : new HTaskControlProperties(
+                    schedulerItem = new XmlHTaskItem(this.AllTasks, 
                     this.Element.Element("sys"), this, this.Cts?.Token));
 
             this.Vars = new DefaultVars()
@@ -87,11 +87,11 @@ namespace Com.H.Threading.Scheduler
             this.Children = this.Element.Elements()?
                 .Where(x=>!x.Name.LocalName.Equals("sys"))?
                 .Select(x =>
-            new XmlServiceItem(this.AllServices, x, this, this.Cts?.Token))?
+            new XmlHTaskItem(this.AllTasks, x, this, this.Cts?.Token))?
             .ToArray() 
-                ?? Array.Empty<XmlServiceItem>();
+                ?? Array.Empty<XmlHTaskItem>();
             if (schedulerItem != null)
-                this.Children = this.Children.Union(new XmlServiceItem[] { schedulerItem }).ToArray();
+                this.Children = this.Children.Union(new XmlHTaskItem[] { schedulerItem }).ToArray();
 
                 
         }
@@ -103,7 +103,7 @@ namespace Com.H.Threading.Scheduler
         private ValueProcessorItem GetValueProcessorItem()
         =>
            Enumerable.Aggregate(
-                this.AllServices?.ValueProcessors?
+                this.AllTasks?.ValueProcessors?
                .OrdinalFilter(
                    this.ContentSettings?.Type?
                    .Split(new string[] {",", "=>", "->", ">"}, 
@@ -191,7 +191,7 @@ namespace Com.H.Threading.Scheduler
         }
 
         // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~XmlServiceItem()
+        // ~XmlTaskItem()
         // {
         //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         //     Dispose(disposing: false);

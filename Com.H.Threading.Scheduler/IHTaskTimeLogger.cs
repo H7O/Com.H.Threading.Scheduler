@@ -10,7 +10,7 @@ namespace Com.H.Threading.Scheduler
         public DateTime? LastError { get; set; }
         public int ErrorCount { get; set; }
     }
-    public interface IServiceTimeLogger
+    public interface IHTaskTimeLogger
     {
         TimeLog this[string key] { get; }
         void Save();

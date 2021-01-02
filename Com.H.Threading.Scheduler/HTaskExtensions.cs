@@ -24,10 +24,10 @@ namespace Com.H.Threading.Scheduler
 
 
     #endregion
-    public static class ServiceExtensions
+    public static class HTaskExtensions
     {
 
-        public static ContentSettings GetContentSettings(this IServiceItemAttr attr)
+        public static ContentSettings GetContentSettings(this IHTaskItemAttr attr)
         {
             var settings = new ContentSettings()
             { CachePeriod = ContentCachePeriod.None };

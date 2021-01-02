@@ -24,13 +24,13 @@ namespace Com.H.Threading.Scheduler
         public int? PauseBetweenPlays { get; set; }
         public ReplayPlan() => this.Replay = ReplayOption.None;
     }
-    public class ServiceSchedulerEventArgs : EventArgs
+    public class HTaskSchedulerEventArgs : EventArgs
     {
         #region properties
         public CancellationToken CancellationToken { get; init; }
         public object Sender { get; init; }
-        public IServiceItem Service { get; init; }
-        public IEnumerable<IServiceItem> AllServices { get; init; }
+        public IHTaskItem Task { get; init; }
+        public IEnumerable<IHTaskItem> AllTasks { get; init; }
         public DateTime? LastExecuted { get; init; }
         public ReplayPlan Loop { get; init; }
         public IDictionary<string, object> ExtraVars { get; init; }
@@ -63,31 +63,31 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
         #region constructor
-        public ServiceSchedulerEventArgs(
-            ServiceScheduler scheduler,
-            IServiceItem service,
+        public HTaskSchedulerEventArgs(
+            HTaskScheduler scheduler,
+            IHTaskItem task,
             CancellationToken cancellationToken
             )
         {
             this.Sender = scheduler;
-            this.Service = service;
+            this.Task = task;
             this.CancellationToken = cancellationToken;
             this.Loop = new ReplayPlan();
         }
         #endregion
 
         #region getters
-        public IServiceItem GetItem(string index)
+        public IHTaskItem GetItem(string index)
         => index?.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
-                                    .Aggregate((IServiceItem)null, (i, n) =>
+                                    .Aggregate((IHTaskItem)null, (i, n) =>
                                    i?.Children?.FirstOrDefault(x => x.Name.EqualsIgnoreCase(n)) ??
-                                   this.Service[n]);
+                                   this.Task[n]);
         
-        public IEnumerable<IServiceItem> GetItems(string index)
+        public IEnumerable<IHTaskItem> GetItems(string index)
         => index?.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
-                                    .Aggregate((IEnumerable<IServiceItem>)null, (i, n) =>
+                                    .Aggregate((IEnumerable<IHTaskItem>)null, (i, n) =>
                                    i?.SelectMany(x => x.Children)?.Where(c => c.Name.EqualsIgnoreCase(n)) ??
-                                   this.Service?.Children?.Where(x=>x.Name.EqualsIgnoreCase(n)));
+                                   this.Task?.Children?.Where(x=>x.Name.EqualsIgnoreCase(n)));
             
         
         public IEnumerable<string> GetValues(string index)

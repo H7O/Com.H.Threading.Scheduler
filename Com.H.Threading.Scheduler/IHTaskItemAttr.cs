@@ -5,7 +5,7 @@ using System.Xml.Linq;
 
 namespace Com.H.Threading.Scheduler
 {
-    public interface IServiceItemAttr
+    public interface IHTaskItemAttr
     {
         IDictionary<string, string> Items { get; }
         string this[string attr] { get; }
