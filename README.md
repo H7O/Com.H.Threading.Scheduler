@@ -1,17 +1,17 @@
 # Com.H.Threading.Scheduler
-An easy to use, simple, yet feature-rich open-source framework for writing middlewares in the form of low resource footnote Windows services and/or Linux Daemons. Written in .NET starndard 2.0 to offer the convenience of using it under both older .NET framework 4.8 and newer .NET 5 and beyond.
+An easy to use, simple, yet feature-rich open-source framework for writing middlewares in the form of low resource footnote Windows services and/or Linux Daemons.
  
 ## What's the purpose of this library?
 This library helps build solutions that require some of their time sensitive logic to conditinally run as a background process without user input.
 
 And although most solutions might not have the need for such time-sensitive background process logic, the ones that do would hopefully benefit from what this library offers.
 
-One of the goals of this library is to help developers write background services while focusing only on what matters, which is the logic that needs to run in the background, and leaving the process scheduling details conveniently hidden behind an easy to use, feature-rich, and efficient scheduling engine tucked away in this small library.
+One of the goals of this library is to help developers write background services while focusing only on what matters, which is the logic that needs to run in the background, and leaving the process scheduling details conveniently hidden behind an easy to use, feature-rich, efficient and hopefully reliable scheduling engine tucked away in this small library.
 
 ## How to install
 Perhaps the easiest way is to install the package for this library is done via NuGet package manager [https://www.nuget.org/packages/Com.H.Threading.Scheduler/](https://www.nuget.org/packages/Com.H.Threading.Scheduler/)
  
-Alternatively, you can clone / download the library from this github repo, compile, then reference the output dll in your project.
+Alternatively, you can clone / download the library from this github repo, compile, then reference the output dlls in your project.
 
 
 ## Examples
@@ -24,7 +24,7 @@ The following examples are orginized to cover scenarious in the order from simpl
 
 This simple example demonstrate how to use the library to build a console application that runs some logic once a day at a specific time.
 
-The first thing we need to do before writing code is prepare a simple configuration file that tells the library of the rules it's scheduling engine needs to follow when scheduling services (note: `services` might also be referred to in this document as `tasks` or `processes`, all intended to mean the same thing, which is simply a block of code that needs to be executed). 
+The first thing we need to do before writing code is prepare a simple configuration file that tells the library of the rules it's scheduling engine needs to follow when scheduling tasks (note: `tasks` might also be referred to in this document as `services` or `processes`, all intended to mean the same thing, which is simply a block of code that needs to be executed). 
 
 We'll discuss the configuration file format in details later-on, but for now, let's build a simple config file to serve as a sample of what the configuration file structure looks like. Later-on, we can reveal more scheduling control features available to setup in the config file as we go through more examples.
 
@@ -88,9 +88,9 @@ namespace scheduler_tester
 			// throw error if config file not found in current folder
             if (File.Exists(configPath)==false) throw new FileNotFoundException(configPath);
 			// instantiate the scheduler engine
-            var scheduler = new ServiceScheduler(configPath);
+            var scheduler = new HTaskScheduler(configPath);
 			// listen for the event that the engine triggers based on our config <sys> tag conditions
-            scheduler.ServiceIsDue += HandleTask;
+            scheduler.TaskIsDue += HandleTask;
 			// start the scheduler engine
             scheduler.Start();
 			// wait for <enter> input from screen to stop the scheduler engine
@@ -101,7 +101,7 @@ namespace scheduler_tester
         }
 		
 		// the code we want the engine to call at runtime
-        static void HandleTask(object sender, ServiceSchedulerEventArgs e)
+        static void HandleTask(object sender, HTaskSchedulerEventArgs e)
         {
 			// print the content stored in <greeting_message> tag
             System.Console.WriteLine(e["greeting_message"]);
@@ -292,15 +292,15 @@ namespace scheduler_tester
         {
             var configPath = Path.Combine(Directory.GetCurrentDirectory(), "scheduler.xml");
             if (File.Exists(configPath)==false) throw new FileNotFoundException(configPath);
-            var scheduler = new ServiceScheduler(configPath);
-            scheduler.ServiceIsDue += HandleTask;
+            var scheduler = new HTaskScheduler(configPath);
+            scheduler.TaskIsDue += HandleTask;
             scheduler.Start();
             System.Console.WriteLine("press <enter> to exit.");
             Console.ReadLine();
             scheduler.Stop();
             System.Console.WriteLine("done.");
         }
-        static void HandleTask(object sender, ServiceSchedulerEventArgs e)
+        static void HandleTask(object sender, HTaskSchedulerEventArgs e)
         {
             switch(e["name"] as string)
             {
@@ -313,11 +313,11 @@ namespace scheduler_tester
             }
         }
 
-        static void ProcessPrintMessageTask(ServiceSchedulerEventArgs e)
+        static void ProcessPrintMessageTask(HTaskSchedulerEventArgs e)
         {
             System.Console.WriteLine(e["greeting_message"]);
         }
-        static void ProcessCountNumbersTask(ServiceSchedulerEventArgs e)
+        static void ProcessCountNumbersTask(HTaskSchedulerEventArgs e)
         {
             int sum = e["some_numbers"]
                 .Split(new char[] {','}, StringSplitOptions.RemoveEmptyEntries)
