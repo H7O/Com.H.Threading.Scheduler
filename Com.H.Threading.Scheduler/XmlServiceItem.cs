@@ -9,6 +9,7 @@ using Com.H.Security.Cryptography;
 using System.Collections.Concurrent;
 using Com.H.Data;
 using Com.H.Linq;
+using Com.H.Threading.Scheduler.VP;
 
 namespace Com.H.Threading.Scheduler
 {

@@ -22,7 +22,7 @@ namespace Com.H.Threading.Scheduler
         public int TickInterval { get; set; }
         private string FilePath { get; set; }
         private IServiceTimeLogger TimeLog { get; set; }
-        private ICollection<IServiceItem> Services { get; set; }
+        private IServiceCollection Services { get; set; }
         private CancellationTokenSource Cts { get; set; }
         private AtomicGate RunSwitch { get; set; }
         private TrafficController ThreadTraffic { get; set; }
@@ -47,6 +47,7 @@ namespace Com.H.Threading.Scheduler
             this.TickInterval = 1000;
             // this.Load();
             this.RunSwitch = new AtomicGate();
+            this.Load();
         }
 
         /// <summary>
@@ -59,7 +60,7 @@ namespace Com.H.Threading.Scheduler
         /// </summary>
         /// <param name="services"></param>
         /// <param name="timeLog"></param>
-        public ServiceScheduler(ICollection<IServiceItem> services, IServiceTimeLogger timeLog = null)
+        public ServiceScheduler(IServiceCollection services, IServiceTimeLogger timeLog = null)
         {
             this.Services = services ?? throw new ArgumentNullException(nameof(services));
             this.TimeLog = timeLog ?? new XmlFileServiceTimeLogger();
@@ -72,7 +73,7 @@ namespace Com.H.Threading.Scheduler
         #region load
         private void Load()
         {
-            if (string.IsNullOrEmpty(this.FilePath)
+            if (string.IsNullOrWhiteSpace(this.FilePath)
                 && (this.Services?.Any() == false)
                 ) throw new ArgumentNullException(
                     "no file path or services defined");
@@ -86,9 +87,10 @@ namespace Com.H.Threading.Scheduler
             }
 
             this.Services = new XmlFileServiceCollection(this.FilePath);
-            this.TimeLog = new XmlFileServiceTimeLogger(Directory.GetParent(this.FilePath).FullName
-                + IOExtensions.DirectorySeperatorString
-                + new FileInfo(this.FilePath).Name + ".log");
+            this.TimeLog = new XmlFileServiceTimeLogger(
+                Path.Combine(
+                    Directory.GetParent(this.FilePath).FullName,
+                    new FileInfo(this.FilePath).Name + ".log"));
             foreach (var service in this.Services.Where(x => x.Schedule.IgnoreLogOnRestart
                 && this.TimeLog[x.UniqueKey] != null
                 ))
@@ -110,7 +112,7 @@ namespace Com.H.Threading.Scheduler
         public Task Start(CancellationToken? cancellationToken = null)
         {
             if (!this.RunSwitch.TryOpen()) return Task.CompletedTask;
-            this.Load();
+            //this.Load();
             this.Cts = cancellationToken == null
                 ? new CancellationTokenSource()
                 : CancellationTokenSource.CreateLinkedTokenSource(

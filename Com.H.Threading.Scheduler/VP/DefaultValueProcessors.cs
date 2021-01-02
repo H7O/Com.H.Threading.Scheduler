@@ -13,36 +13,36 @@ using Com.H.Text.Json;
 using Com.H.Xml.Linq;
 using System.IO;
 
-namespace Com.H.Threading.Scheduler
+namespace Com.H.Threading.Scheduler.VP
 {
-    public class ValueProcessorItem 
+    public class ValueProcessorItem
     {
         public IServiceItem Item { get; set; }
         public string Value { get; set; }
         public dynamic Data { get; set; }
         public static ValueProcessorItem Parse(IServiceItem item)
             => new ValueProcessorItem()
-                {
-                    Item = item,
-                    Value = item?.RawValue
-                };
-        
+            {
+                Item = item,
+                Value = item?.RawValue
+            };
+
     }
 
-    public static class DefaultValueProcessors 
+    public static class DefaultValueProcessors
     {
         public static bool IsValid(
-            this ValueProcessorItem valueItem, 
+            this ValueProcessorItem valueItem,
             string contentType)
         =>
-            string.IsNullOrWhiteSpace(valueItem.Value??valueItem?.Item?.RawValue) == false
+            string.IsNullOrWhiteSpace(valueItem.Value ?? valueItem?.Item?.RawValue) == false
             &&
             (valueItem?.Item?.Attributes?["content_type"]?
             .Split(new string[] { ",", "->", "=>", ">" },
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)?
             .ContainsIgnoreCase(contentType) ?? false);
 
-        
+
         public static ValueProcessorItem UriProcessor(this ValueProcessorItem valueItem, CancellationToken? token = null)
         {
             if (valueItem.IsValid("uri") == false) return valueItem;
@@ -54,14 +54,14 @@ namespace Com.H.Threading.Scheduler
                 .GetContentAsync(token,
                 valueItem.Item.Attributes?["uri_referer"], valueItem.Item.Attributes?["uri_user_agent"])
                 .GetAwaiter().GetResult()) == null)
-                    throw new TimeoutException(
-                        $"Uri settings retrieval timed-out for {valueItem.Item.Name}: {valueItem.Value}");
+                throw new TimeoutException(
+                    $"Uri settings retrieval timed-out for {valueItem.Item.Name}: {valueItem.Value}");
             return valueItem;
         }
 
-        public static ValueProcessorItem DefaultVarsProcessor(this ValueProcessorItem valueItem) 
+        public static ValueProcessorItem DefaultVarsProcessor(this ValueProcessorItem valueItem)
         {
-            if (string.IsNullOrWhiteSpace(valueItem.Value = valueItem.Value??valueItem?.Item?.RawValue))
+            if (string.IsNullOrWhiteSpace(valueItem.Value = valueItem.Value ?? valueItem?.Item?.RawValue))
                 return valueItem;
             valueItem.Value = valueItem.Value.FillDate(valueItem.Item.Vars?.Now, "{now{")
                 .FillDate(valueItem.Item.Vars?.Tomorrow, "{tomorrow{")
@@ -74,7 +74,7 @@ namespace Com.H.Threading.Scheduler
 
         public static ValueProcessorItem CustomVarsProcessor(this ValueProcessorItem valueItem)
         {
-            if (string.IsNullOrWhiteSpace(valueItem.Value = valueItem.Value??valueItem?.Item?.RawValue)
+            if (string.IsNullOrWhiteSpace(valueItem.Value = valueItem.Value ?? valueItem?.Item?.RawValue)
                 ||
                 valueItem.Item.Vars?.Custom == null
                 )
@@ -93,9 +93,9 @@ namespace Com.H.Threading.Scheduler
                 valueItem.Data = valueItem.Value.ParseCsv();
                 return valueItem;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                throw new FormatException($"Invalid CSV Format for tag {valueItem.Item.FullName}: " 
+                throw new FormatException($"Invalid CSV Format for tag {valueItem.Item.FullName}: "
                     + ex.Message);
             }
         }
@@ -142,7 +142,7 @@ namespace Com.H.Threading.Scheduler
             try
             {
                 valueItem.Data = valueItem.Value.ParseXml(
-                    bool.Parse(valueItem.Item.Attributes?["root_element"]??"false")
+                    bool.Parse(valueItem.Item.Attributes?["root_element"] ?? "false")
                     );
                 return valueItem;
             }

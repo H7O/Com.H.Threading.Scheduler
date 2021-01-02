@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Xml.Linq;
 using System.Threading;
+using Com.H.Threading.Scheduler.VP;
 
 namespace Com.H.Threading.Scheduler
 {
