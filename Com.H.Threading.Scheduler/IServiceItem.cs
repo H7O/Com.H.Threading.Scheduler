@@ -25,10 +25,16 @@ namespace Com.H.Threading.Scheduler
         /// </summary>
         string GetValue();
         /// <summary>
-        /// Service item DataModel (used when model_type attribute is defined)
+        /// Service item DataModel (used when content_type attribute is defined)
         /// </summary>
         /// <returns></returns>
-        IEnumerable<T> GetModel<T>();
+        T GetModel<T>();
+        /// <summary>
+        /// Service item DataModel (used when content_type attribute is defined)
+        /// if no content_type is defined, this method returns the output of GetValue()
+        /// </summary>
+        /// <returns></returns>
+        dynamic GetModel() => GetModel<dynamic>()??GetValue();
         /// <summary>
         /// Parent service item
         /// </summary>

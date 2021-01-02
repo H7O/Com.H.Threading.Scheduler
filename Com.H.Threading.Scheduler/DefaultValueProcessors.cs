@@ -8,6 +8,10 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Text.Json;
+using Com.H.Text.Json;
+using Com.H.Xml.Linq;
+using System.IO;
 
 namespace Com.H.Threading.Scheduler
 {
@@ -15,7 +19,7 @@ namespace Com.H.Threading.Scheduler
     {
         public IServiceItem Item { get; set; }
         public string Value { get; set; }
-        public IEnumerable<dynamic> Data { get; set; }
+        public dynamic Data { get; set; }
         public static ValueProcessorItem Parse(IServiceItem item)
             => new ValueProcessorItem()
                 {
@@ -27,11 +31,21 @@ namespace Com.H.Threading.Scheduler
 
     public static class DefaultValueProcessors 
     {
+        public static bool IsValid(
+            this ValueProcessorItem valueItem, 
+            string contentType)
+        =>
+            string.IsNullOrWhiteSpace(valueItem.Value??valueItem?.Item?.RawValue) == false
+            &&
+            (valueItem?.Item?.Attributes?["content_type"]?
+            .Split(new string[] { ",", "->", "=>", ">" },
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)?
+            .ContainsIgnoreCase(contentType) ?? false);
+
+        
         public static ValueProcessorItem UriProcessor(this ValueProcessorItem valueItem, CancellationToken? token = null)
         {
-            if (!valueItem?.Item?.Attributes?["content_type"]?
-                .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)?
-                .Contains("uri")??true) return valueItem;
+            if (valueItem.IsValid("uri") == false) return valueItem;
             if (valueItem.Value == null) valueItem.Value = valueItem.Item.RawValue;
             if (!Uri.IsWellFormedUriString(valueItem.Value, UriKind.Absolute))
                 throw new FormatException(
@@ -45,26 +59,26 @@ namespace Com.H.Threading.Scheduler
             return valueItem;
         }
 
-        public static ValueProcessorItem DateProcessor(this ValueProcessorItem valueItem) 
+        public static ValueProcessorItem DefaultVarsProcessor(this ValueProcessorItem valueItem) 
         {
-            if (string.IsNullOrWhiteSpace(valueItem?.Item?.RawValue))
+            if (string.IsNullOrWhiteSpace(valueItem.Value = valueItem.Value??valueItem?.Item?.RawValue))
                 return valueItem;
-            if (valueItem.Value == null) valueItem.Value = valueItem.Item.RawValue;
             valueItem.Value = valueItem.Value.FillDate(valueItem.Item.Vars?.Now, "{now{")
-                .FillDate(valueItem.Item.Vars?.Tomorrow, "{tomorrow{");
+                .FillDate(valueItem.Item.Vars?.Tomorrow, "{tomorrow{")
+                .Replace("{dir{sys}}", Directory.GetCurrentDirectory())
+                .Replace("{dir{uri}}", new Uri(Directory.GetCurrentDirectory())
+                .AbsoluteUri)
+                ;
             return valueItem;
         }
 
         public static ValueProcessorItem CustomVarsProcessor(this ValueProcessorItem valueItem)
         {
-            if (string.IsNullOrWhiteSpace(valueItem?.Item?.RawValue)
+            if (string.IsNullOrWhiteSpace(valueItem.Value = valueItem.Value??valueItem?.Item?.RawValue)
                 ||
                 valueItem.Item.Vars?.Custom == null
-                ||
-                typeof(IEnumerable<>).IsAssignableFrom(valueItem.Item.Vars?.Custom.GetType())
                 )
                 return valueItem;
-            if (valueItem.Value == null) valueItem.Value = valueItem.Item.RawValue;
             valueItem.Value = valueItem.Value.Fill(valueItem.Item.Vars.Custom, "{var{", "}}");
             return valueItem;
         }
@@ -72,17 +86,11 @@ namespace Com.H.Threading.Scheduler
         public static ValueProcessorItem CsvDataModelProcessor(
             this ValueProcessorItem valueItem, CancellationToken? _)
         {
-            if (
-                string.IsNullOrWhiteSpace(valueItem?.Item?.RawValue)
-                ||
-                (!valueItem?.Item?.Attributes?["content_type"]?
-                .Split(new string[] { ",", "->", "=>", ">" },
-                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)?
-                .Contains("csv") ?? true))
-                return valueItem;
+            if (valueItem.IsValid("csv") == false) return valueItem;
+            if (valueItem.Value == null) valueItem.Value = valueItem.Item.RawValue;
             try
             {
-                valueItem.Data = valueItem.Item.RawValue.ParseCsv();
+                valueItem.Data = valueItem.Value.ParseCsv();
                 return valueItem;
             }
             catch(Exception ex)
@@ -95,23 +103,52 @@ namespace Com.H.Threading.Scheduler
         public static ValueProcessorItem PsvDataModelProcessor(
             this ValueProcessorItem valueItem, CancellationToken? _)
         {
-            if (
-                string.IsNullOrWhiteSpace(valueItem?.Item?.RawValue)
-                ||
-                (!valueItem?.Item?.Attributes?["content_type"]?
-                .Split(new string[] { ",", "->", "=>", ">" }, 
-                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries )?
-                .Contains("psv") ?? true)
-                )
-                return valueItem;
+            if (valueItem.IsValid("psv") == false) return valueItem;
+            if (valueItem.Value == null) valueItem.Value = valueItem.Item.RawValue;
             try
             {
-                valueItem.Data = valueItem.Item.RawValue.ParsePsv();
+                valueItem.Data = valueItem.Value.ParsePsv();
                 return valueItem;
             }
             catch (Exception ex)
             {
                 throw new FormatException($"Invalid PSV Format for tag {valueItem.Item.FullName}: "
+                    + ex.Message);
+            }
+        }
+
+        public static ValueProcessorItem JsonDataModelProcessor(
+            this ValueProcessorItem valueItem, CancellationToken? _)
+        {
+            if (valueItem.IsValid("json") == false) return valueItem;
+            if (valueItem.Value == null) valueItem.Value = valueItem.Item.RawValue;
+            try
+            {
+                valueItem.Data = valueItem.Value.ParseJson();
+                return valueItem;
+            }
+            catch (Exception ex)
+            {
+                throw new FormatException($"Invalid JSON Format for tag {valueItem.Item.FullName}: "
+                    + ex.Message);
+            }
+        }
+
+        public static ValueProcessorItem XmlDataModelProcessor(
+            this ValueProcessorItem valueItem, CancellationToken? _)
+        {
+            if (valueItem.IsValid("xml") == false) return valueItem;
+            if (valueItem.Value == null) valueItem.Value = valueItem.Item.RawValue;
+            try
+            {
+                valueItem.Data = valueItem.Value.ParseXml(
+                    bool.Parse(valueItem.Item.Attributes?["root_element"]??"false")
+                    );
+                return valueItem;
+            }
+            catch (Exception ex)
+            {
+                throw new FormatException($"Invalid XML Format for tag {valueItem.Item.FullName}: "
                     + ex.Message);
             }
         }

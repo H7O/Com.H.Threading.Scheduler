@@ -109,7 +109,7 @@ namespace Com.H.Threading.Scheduler
         /// Properties within the dynamic object are replaced in all tags using
         /// the following var format: {var{property_name}}
         /// </summary>
-        public IEnumerable<dynamic> Repeat { get; }
+        public object Repeat { get; }
         /// <summary>
         /// Used in conjunction with Repeat. Introduces a delay interval among iterative repeats.
         /// </summary>

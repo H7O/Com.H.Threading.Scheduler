@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Com.H.IO;
+using Com.H.Linq;
 using Com.H.Text;
 
 namespace Com.H.Threading.Scheduler
@@ -185,7 +186,8 @@ namespace Com.H.Threading.Scheduler
                 if (service.Schedule?.Repeat != null)
                 {
                     AtomicGate delaySwitch = new AtomicGate();
-                    foreach (var repeatDataModel in service.Schedule?.Repeat)
+
+                    foreach (var repeatDataModel in service.Schedule?.Repeat.EnsureEnumerable())
                     {
                         if (service.Schedule?.RepeatDelayInterval > 0
                             && !delaySwitch.TryOpen())
@@ -203,7 +205,8 @@ namespace Com.H.Threading.Scheduler
                                 Enumerable.Empty<IServiceItem>()).Append(item);
                         }
                         foreach (var child in AllChildren(service)
-                            .Where(x => x.Vars?.Custom == null))
+                            //.Where(x => x.Vars?.Custom == null)
+                            )
                             child.Vars.Custom = repeatDataModel;
                         RunService();
                     }

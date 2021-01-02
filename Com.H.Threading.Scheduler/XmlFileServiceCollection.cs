@@ -47,7 +47,9 @@ namespace Com.H.Threading.Scheduler
             this.ValueProcessors.TryAdd("uri", DefaultValueProcessors.UriProcessor);
             this.ValueProcessors.TryAdd("csv", DefaultValueProcessors.CsvDataModelProcessor);
             this.ValueProcessors.TryAdd("psv", DefaultValueProcessors.PsvDataModelProcessor);
-            
+            this.ValueProcessors.TryAdd("json", DefaultValueProcessors.JsonDataModelProcessor);
+            this.ValueProcessors.TryAdd("xml", DefaultValueProcessors.XmlDataModelProcessor);
+
         }
         #endregion
         #region load from disk

@@ -101,12 +101,12 @@ namespace Com.H.Threading.Scheduler
             return null;
         });
 
-        public IEnumerable<IEnumerable<dynamic>> GetModels(string index)
+        public IEnumerable<dynamic> GetModels(string index)
         => this.GetItems(index).Select(x =>
         {
             try
             {
-                return x?.GetModel<dynamic>();
+                return x?.GetModel();
             }
             catch { }
             return null;

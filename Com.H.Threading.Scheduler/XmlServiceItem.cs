@@ -110,9 +110,9 @@ namespace Com.H.Threading.Scheduler
                        | StringSplitOptions.TrimEntries))
                 ?? Array.Empty<ValueProcessor>()
                 , ValueProcessorItem.Parse(this)
-                .DateProcessor().CustomVarsProcessor()
+                .DefaultVarsProcessor().CustomVarsProcessor()
                 , (i, n) => n(i, this.Cts?.Token)
-                .DateProcessor().CustomVarsProcessor()
+                .DefaultVarsProcessor().CustomVarsProcessor()
                 );
         
 
@@ -143,13 +143,13 @@ namespace Com.H.Threading.Scheduler
 
         }
 
-        public IEnumerable<T> GetModel<T>()
+        public T GetModel<T>()
         {
             try
             {
-                IEnumerable<T> GetContent()
+                T GetContent()
                 {
-                    return (IEnumerable<T>) this.GetValueProcessorItem()?.Data;
+                    return (T) this.GetValueProcessorItem()?.Data;
                 }
                 if (this.ContentSettings.CachePeriod == ContentCachePeriod.None)
                     return GetContent();

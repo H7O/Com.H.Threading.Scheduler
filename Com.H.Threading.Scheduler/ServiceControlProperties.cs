@@ -28,7 +28,7 @@ namespace Com.H.Threading.Scheduler
             }
         }
 
-        public IEnumerable<dynamic> Repeat
+        public dynamic Repeat
         {
             get => this.ServiceItem["repeat"]?.GetModel<dynamic>();
             //get =>
