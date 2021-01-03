@@ -22,7 +22,7 @@ namespace Com.H.Threading.Scheduler
         public int TickInterval { get; set; }
         private string FilePath { get; set; }
         private IHTaskTimeLogger TimeLog { get; set; }
-        private IHTaskCollection Tasks { get; set; }
+        public IHTaskCollection Tasks { get; private set; }
         private CancellationTokenSource Cts { get; set; }
         private AtomicGate RunSwitch { get; set; }
         private TrafficController ThreadTraffic { get; set; }

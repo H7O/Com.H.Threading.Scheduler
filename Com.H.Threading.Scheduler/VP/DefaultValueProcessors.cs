@@ -46,7 +46,7 @@ namespace Com.H.Threading.Scheduler.VP
         public static ValueProcessorItem UriProcessor(this ValueProcessorItem valueItem, CancellationToken? token = null)
         {
             if (valueItem.IsValid("uri") == false) return valueItem;
-            if (valueItem.Value == null) valueItem.Value = valueItem.Item.RawValue;
+            valueItem.Value ??= valueItem.Item.RawValue;
             if (!Uri.IsWellFormedUriString(valueItem.Value, UriKind.Absolute))
                 throw new FormatException(
                     $"Invalid uri format for {valueItem.Item.Name}: {valueItem.Value}");
@@ -87,7 +87,7 @@ namespace Com.H.Threading.Scheduler.VP
             this ValueProcessorItem valueItem, CancellationToken? _)
         {
             if (valueItem.IsValid("csv") == false) return valueItem;
-            if (valueItem.Value == null) valueItem.Value = valueItem.Item.RawValue;
+            valueItem.Value ??= valueItem.Item.RawValue;
             try
             {
                 valueItem.Data = valueItem.Value.ParseCsv();
@@ -104,7 +104,7 @@ namespace Com.H.Threading.Scheduler.VP
             this ValueProcessorItem valueItem, CancellationToken? _)
         {
             if (valueItem.IsValid("psv") == false) return valueItem;
-            if (valueItem.Value == null) valueItem.Value = valueItem.Item.RawValue;
+            valueItem.Value ??= valueItem.Item.RawValue;
             try
             {
                 valueItem.Data = valueItem.Value.ParsePsv();
@@ -121,7 +121,7 @@ namespace Com.H.Threading.Scheduler.VP
             this ValueProcessorItem valueItem, CancellationToken? _)
         {
             if (valueItem.IsValid("json") == false) return valueItem;
-            if (valueItem.Value == null) valueItem.Value = valueItem.Item.RawValue;
+            valueItem.Value ??= valueItem.Item.RawValue;
             try
             {
                 valueItem.Data = valueItem.Value.ParseJson();
@@ -138,7 +138,7 @@ namespace Com.H.Threading.Scheduler.VP
             this ValueProcessorItem valueItem, CancellationToken? _)
         {
             if (valueItem.IsValid("xml") == false) return valueItem;
-            if (valueItem.Value == null) valueItem.Value = valueItem.Item.RawValue;
+            valueItem.Value ??= valueItem.Item.RawValue;
             try
             {
                 valueItem.Data = valueItem.Value.ParseXml(
