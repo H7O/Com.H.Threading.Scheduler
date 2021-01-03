@@ -21,7 +21,7 @@ Takes care of craceful multi-threaded service granular scheduling, shutdowns, re
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Com.H.Data" Version="1.0.3" />
+    <PackageReference Include="Com.H.Data" Version="1.0.4" />
   </ItemGroup>
 
 </Project>
