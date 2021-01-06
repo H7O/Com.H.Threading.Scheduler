@@ -71,7 +71,7 @@ namespace Com.H.Threading.Scheduler
         {
             get
             {
-                var item = this.TaskItem["date"]?.GetValue();
+                var item = this.TaskItem["dates"]?.GetValue();
                 if (item == null) return null;
                 if (this.Time != null) return item.ExtractDates(
                     new string[] { "|", "\r", "\n" })
