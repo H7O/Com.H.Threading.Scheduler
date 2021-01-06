@@ -22,10 +22,13 @@ namespace Com.H.Threading.Scheduler
         /// </summary>
         DateTime? NotAfter { get; }
         /// <summary>
-        /// Permitted to run only at this exact date (date only, time format will be omitted)
         /// 4th value to be checked by the engine to determine whether or not to run the task.
+        /// Permitted to run only at these exact dates pipe | delimited.
+        /// It can be exact dates yyyy-MM-dd HH:mm:ss, dates without time yyyy-MM-dd or alternatively dd MMM, yyyy,
+        /// or dates without year MM-dd or alternatively dd MMM.
+        /// If the year is omitted the scheduler uses the current year.
         /// </summary>
-        DateTime? Date { get; }
+        IEnumerable<DateTime> Dates { get; }
         /// <summary>
         /// The task is permitted to run only within specific days of the year
         /// e.g. 56,75..100 <= permit the task to run on day 56,75, and between 75 and 200.

@@ -67,14 +67,18 @@ namespace Com.H.Threading.Scheduler
             }
         }
 
-        public DateTime? Date
+        public IEnumerable<DateTime> Dates
         {
             get
             {
                 var item = this.TaskItem["date"]?.GetValue();
                 if (item == null) return null;
-                if (DateTime.TryParse(item, out DateTime exactDateTime)) return exactDateTime.Date;
-                return null;
+                if (this.Time != null) return item.ExtractDates(
+                    new string[] { "|", "\r", "\n" })
+                          .Select(x =>
+                          new DateTime(Math.Max(x.Ticks,
+                          x.Date.AddTicks(((TimeSpan)this.Time).Ticks).Ticks)));
+                else return item.ExtractDates(new string[] { "|", "\r", "\n" });
             }
         }
 

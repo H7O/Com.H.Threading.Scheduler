@@ -21,7 +21,12 @@ Takes care of craceful multi-threaded service granular scheduling, shutdowns, re
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Com.H.Data" Version="1.0.4" />
+    <Reference Include="Com.H">
+      <HintPath>..\..\Com.H\Com.H\bin\Release\net5.0\Com.H.dll</HintPath>
+    </Reference>
+    <Reference Include="Com.H.Data">
+      <HintPath>..\..\Com.H.Data\Com.H.Data\bin\Release\net5.0\Com.H.Data.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

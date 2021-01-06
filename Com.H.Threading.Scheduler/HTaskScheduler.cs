@@ -275,9 +275,11 @@ namespace Com.H.Threading.Scheduler
                 && timeNow > item.Schedule.NotAfter) return false;
             #endregion
 
-            #region date
-            if (item.Schedule.Date != null
-                && timeNow.Date != item.Schedule.Date) return false;
+            #region dates
+            if (item.Schedule.Dates != null
+                && 
+                !item.Schedule.Dates.Any(x=>
+                timeNow >= x && timeNow < x.Date.AddDays(1))) return false;
 
             #endregion
 
