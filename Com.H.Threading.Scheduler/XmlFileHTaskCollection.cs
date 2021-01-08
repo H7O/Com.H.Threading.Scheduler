@@ -8,6 +8,8 @@ using System.Text;
 using System.Xml.Linq;
 using System.Threading;
 using Com.H.Threading.Scheduler.VP;
+using Com.H.IO;
+using Com.H.Text;
 
 namespace Com.H.Threading.Scheduler
 {
@@ -16,7 +18,7 @@ namespace Com.H.Threading.Scheduler
     {
         #region properties
         
-        private ICollection<IHTaskItem> Tasks { get; set; }
+        private ConcurrentDictionary<string, IHTaskItem> Tasks { get; set; }
 
         /// <summary>
         /// Allows for adding custom value post processing logic when retrieving configuration values.
@@ -28,22 +30,25 @@ namespace Com.H.Threading.Scheduler
         /// </summary>
         public ConcurrentDictionary<string, ValueProcessor> ValueProcessors { get; private set; }
         private DateTime? TasksLastModified { get; set; }
-        private string FilePath { get; set; }
+        private int? TasksFileCount { get; set; }
+        private string BasePath { get; set; }
         private object TaskLock { get; set; } = new object();
 
-        int ICollection<IHTaskItem>.Count => throw new NotImplementedException();
+        int ICollection<IHTaskItem>.Count => this.Tasks.Count;
 
         bool ICollection<IHTaskItem>.IsReadOnly => true;
         #endregion
 
         #region constructor
-        public XmlFileHTaskCollection(string taskCollectionFilePath)
+        public XmlFileHTaskCollection(string taskCollectionPath)
         {
-            if (string.IsNullOrWhiteSpace(taskCollectionFilePath))
-                throw new ArgumentNullException(nameof(taskCollectionFilePath));
-            this.FilePath = taskCollectionFilePath;
-            if (!File.Exists(this.FilePath))
-                throw new FileNotFoundException(this.FilePath);
+            if (string.IsNullOrWhiteSpace(taskCollectionPath))
+                throw new ArgumentNullException(nameof(taskCollectionPath));
+            this.BasePath = taskCollectionPath;
+            if (!Directory.Exists(this.BasePath) 
+                && !File.Exists(this.BasePath))
+                throw new FileNotFoundException(this.BasePath);
+
             this.ValueProcessors = new ConcurrentDictionary<string, ValueProcessor>();
             this.ValueProcessors.TryAdd("uri", DefaultValueProcessors.UriProcessor);
             this.ValueProcessors.TryAdd("csv", DefaultValueProcessors.CsvDataModelProcessor);
@@ -56,22 +61,58 @@ namespace Com.H.Threading.Scheduler
         #region load from disk
         private ICollection<IHTaskItem> GetTasks()
         {
-            if (!File.Exists(this.FilePath))
-                throw new FileNotFoundException(this.FilePath);
+            if (!File.Exists(this.BasePath)
+                && !Directory.Exists(this.BasePath)
+                )
+                throw new FileNotFoundException(this.BasePath);
+            var currentFiles = this.BasePath.ListFiles(true, @".*\.xml$");
+            var currentDate = currentFiles.Select(x => x.LastWriteTime).Max();
+            var currentFileCount = currentFiles.Count();
+
+
             lock (this.TaskLock)
             {
                 if (this.Tasks != null
                         && this.TasksLastModified != null
-                        && File.GetLastWriteTime(this.FilePath) <= this.TasksLastModified)
-                    return this.Tasks;
+                        && this.TasksFileCount != null
+                        && currentDate <= this.TasksLastModified
+                        && currentFileCount == this.TasksFileCount
+                        )
+                    return this.Tasks.Values;
+                if (this.Tasks == null) this.Tasks = new ConcurrentDictionary<string, IHTaskItem>();
+                
+                foreach(var file in currentFiles.Where(x=>
+                this.TasksLastModified == null
+                ||
+                x.LastWriteTime > this.TasksLastModified))
+                {
+                    try
+                    {
+                        var dicRecordsToRemove = Tasks.Where(x => x.Key.EqualsIgnoreCase(file.FullName));
+                        var tasksToAdd = XElement.Load(file.FullName)
+                                .Elements().Select(x => new XmlHTaskItem(this, x) { FullName = file.FullName });
+                        foreach (var item in dicRecordsToRemove)
+                            this.Tasks.TryRemove(item);
+                        foreach (var taskToAdd in tasksToAdd)
+                            this.Tasks.TryAdd(file.FullName, taskToAdd);
+                    }
+                    catch(Exception ex)
+                    {
+                        // todo: add error event to be consumed by the scheduler and 
+                        // spit out via scheduler own OnError event.
+                        // This to allow bypassing of erroneous XML configurations instead of
+                        // halting the parsing process
+                        throw new FormatException($"XML format error trying to load {file.FullName}: {ex.Message}");
+                    }
 
-                this.Tasks = XElement.Load(this.FilePath)
-                            .Elements().Select(x => new XmlHTaskItem(this, x)).ToArray();
+                }
 
-                this.TasksLastModified = File.GetLastWriteTime(this.FilePath);
-                return this.Tasks;
+                this.TasksLastModified = currentDate;
+                this.TasksFileCount = currentFileCount;
+                return this.Tasks.Values;
             }
         }
+
         #endregion
 
         #region IEnumerator

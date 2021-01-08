@@ -16,7 +16,7 @@ namespace Com.H.Threading.Scheduler
     public class XmlHTaskItem : IHTaskItem, IDisposable
     {
         #region properties
-        
+        public string XmlFileFullPath { get; set; }
         public string UniqueKey { get; init; }
         private XElement Element { get; init; }
         public string RawValue { get; init; }

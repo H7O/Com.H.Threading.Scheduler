@@ -20,7 +20,7 @@ namespace Com.H.Threading.Scheduler
         /// Default value is 1000 miliseconds
         /// </summary>
         public int TickInterval { get; set; }
-        private string FilePath { get; set; }
+        private string XmlConfigPath { get; set; }
         private IHTaskTimeLogger TimeLog { get; set; }
         public IHTaskCollection Tasks { get; private set; }
         private CancellationTokenSource Cts { get; set; }
@@ -37,12 +37,12 @@ namespace Com.H.Threading.Scheduler
         /// that accepts those interfaces to integrate your custom config / logging workflow with the schedular
         /// framework.
         /// </summary>
-        /// <param name="xmlConfigFilePath"></param>
-        public HTaskScheduler(string xmlConfigFilePath)
+        /// <param name="xmlConfigPath"></param>
+        public HTaskScheduler(string xmlConfigPath)
         {
-            if (string.IsNullOrWhiteSpace(xmlConfigFilePath))
-                throw new ArgumentNullException(nameof(xmlConfigFilePath));
-            this.FilePath = xmlConfigFilePath;
+            if (string.IsNullOrWhiteSpace(xmlConfigPath))
+                throw new ArgumentNullException(nameof(xmlConfigPath));
+            this.XmlConfigPath = xmlConfigPath;
             this.ThreadTraffic = new TrafficController();
             this.TickInterval = 1000;
             // this.Load();
@@ -73,24 +73,26 @@ namespace Com.H.Threading.Scheduler
         #region load
         private void Load()
         {
-            if (string.IsNullOrWhiteSpace(this.FilePath)
+            if (string.IsNullOrWhiteSpace(this.XmlConfigPath)
                 && (this.Tasks?.Any() == false)
                 ) throw new ArgumentNullException(
                     "no file path or tasks defined");
 
-            if (string.IsNullOrWhiteSpace(this.FilePath) == false
-                && File.Exists(this.FilePath) == false)
+            if (string.IsNullOrWhiteSpace(this.XmlConfigPath) == false
+                && !File.Exists(this.XmlConfigPath)  
+                && !Directory.Exists(this.XmlConfigPath))
             {
                 if (this.Tasks?.Any() == false)
-                    throw new FileNotFoundException(this.FilePath);
+                    throw new FileNotFoundException(this.XmlConfigPath);
                 return;
             }
-
-            this.Tasks = new XmlFileHTaskCollection(this.FilePath);
+            Console.WriteLine("before loading tasks");
+            this.Tasks = new XmlFileHTaskCollection(this.XmlConfigPath);
+            
             this.TimeLog = new XmlFileHTaskTimeLogger(
                 Path.Combine(
-                    Directory.GetParent(this.FilePath).FullName,
-                    new FileInfo(this.FilePath).Name + ".log"));
+                    Directory.GetParent(this.XmlConfigPath).FullName,
+                    new FileInfo(this.XmlConfigPath).Name + ".log"));
             foreach (var task in this.Tasks.Where(x => x.Schedule.IgnoreLogOnRestart
                 && this.TimeLog[x.UniqueKey] != null
                 ))

@@ -18,6 +18,27 @@ namespace Com.H.Threading.Scheduler
         private string LogFilePath { get; set; }
         private ConcurrentDictionary<string, TimeLog> TimeLogs { get; set; }
         private ReaderWriterLockSlim RWLock { get; set; }
+        private object SaveLock { get; set; }
+
+        #endregion
+
+        #region lock
+        private void EnterReadLock()
+        {
+            this.RWLock.EnterReadLock();
+        }
+        private void ExitReadLock()
+        {
+            this.RWLock.ExitReadLock();
+        }
+        private void EnterWriteLock()
+        {
+            this.RWLock.EnterWriteLock();
+        }
+        private void ExitWriteLock()
+        {
+            this.RWLock.ExitWriteLock();
+        }
 
         #endregion
 
@@ -33,7 +54,7 @@ namespace Com.H.Threading.Scheduler
         {
             this.LogFilePath = logFilePath;
             this.RWLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-            
+            this.SaveLock = new object();
             this.Load();
         }
         #endregion
@@ -45,24 +66,24 @@ namespace Com.H.Threading.Scheduler
             {
                 try
                 {
-                    this.RWLock.EnterReadLock();
+                    this.EnterReadLock();
                     if (this.TimeLogs.ContainsKey(key) != false)
                         return this.TimeLogs[key];
                 }
                 catch { throw; }
                 finally
                 {
-                    this.RWLock.ExitReadLock();
+                    this.ExitReadLock();
                 }
                 try
                 {
-                    this.RWLock.EnterWriteLock();
+                    this.EnterWriteLock();
                     return this.TimeLogs[key] = new TimeLog();
                 }
                 catch { throw; }
                 finally
                 {
-                    this.RWLock.ExitWriteLock();
+                    this.ExitWriteLock();
                 }
             }
         }
@@ -74,7 +95,7 @@ namespace Com.H.Threading.Scheduler
         {
             try
             {
-                this.RWLock.EnterWriteLock();
+                this.EnterWriteLock();
                 foreach (var key in this.TimeLogs
                     .Where(x => x.Value.LastExecuted < DateTime.Today)
                     .Select(x => x.Key))
@@ -83,7 +104,7 @@ namespace Com.H.Threading.Scheduler
             catch { throw; }
             finally
             {
-                this.RWLock.ExitWriteLock();
+                this.ExitWriteLock();
             }
         }
         public void Save()
@@ -94,7 +115,7 @@ namespace Com.H.Threading.Scheduler
             XElement xml = null;
             try
             {
-                this.RWLock.EnterReadLock();
+                this.EnterReadLock();
                 xml = new XElement("logs",
                 this.TimeLogs.Select(x =>
                         new XElement("log",
@@ -113,10 +134,20 @@ namespace Com.H.Threading.Scheduler
             catch{ throw; }
             finally
             {
-                this.RWLock.ExitReadLock();
+                this.ExitReadLock();
             }
-            
-            File.WriteAllText(this.LogFilePath, xml.ToString(), Encoding.UTF8);
+
+            try
+            {
+                lock (this.SaveLock)
+                {
+                    File.WriteAllText(this.LogFilePath, xml.ToString(), Encoding.UTF8);
+                }
+            }
+            catch
+            {
+                throw;
+            }
         }
         private void Load()
         {
@@ -128,7 +159,7 @@ namespace Com.H.Threading.Scheduler
             }
             try
             {
-                this.RWLock.EnterWriteLock();
+                this.EnterWriteLock();
                 this.TimeLogs = new ConcurrentDictionary<string, TimeLog>(
                     XElement.Load(this.LogFilePath).Elements()
                     .ToDictionary(key => key.Element("key").Value,
@@ -162,7 +193,7 @@ namespace Com.H.Threading.Scheduler
             }
             finally
             {
-                this.RWLock.ExitWriteLock();
+                this.ExitWriteLock();
             }
         }
         #endregion
