@@ -34,7 +34,7 @@ namespace Com.H.Threading.Scheduler
         /// if no content_type is defined, this method returns the output of GetValue()
         /// </summary>
         /// <returns></returns>
-        dynamic GetModel() => GetModel<dynamic>()??GetValue();
+        dynamic GetModel() => GetModel<dynamic>();// ??GetValue(); // note: Jan 25, 2021 - check impact
         /// <summary>
         /// Parent task item
         /// </summary>
