@@ -47,7 +47,7 @@ namespace Com.H.Threading.Scheduler.VP
         {
             var beginMarker = valueItem?.Item?.Attributes?["open-marker"] ?? "{{";
             var endMarker = valueItem?.Item?.Attributes?["close-marker"] ?? "}}";
-            var nullValue = valueItem?.Item?.Attributes?["close-marker"] ?? "";
+            var nullValue = valueItem?.Item?.Attributes?["null-value"] ?? "";
             return (beginMarker, endMarker, nullValue);
         }
 
