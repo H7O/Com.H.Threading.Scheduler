@@ -16,9 +16,15 @@ namespace Com.H.Threading.Scheduler
 
     public class XmlFileHTaskCollection : IHTaskCollection
     {
+        internal class TasksFileContainer
+        {
+            internal string FileName { get; set; }
+            internal IHTaskItem Task { get; set; }
+        }
         #region properties
+
         
-        private ConcurrentDictionary<string, IHTaskItem> Tasks { get; set; }
+        private List<TasksFileContainer> Tasks { get; set; }
 
         /// <summary>
         /// Allows for adding custom value post processing logic when retrieving configuration values.
@@ -78,8 +84,8 @@ namespace Com.H.Threading.Scheduler
                         && currentDate <= this.TasksLastModified
                         && currentFileCount == this.TasksFileCount
                         )
-                    return this.Tasks.Values;
-                if (this.Tasks == null) this.Tasks = new ConcurrentDictionary<string, IHTaskItem>();
+                    return this.Tasks.Select(x=>x.Task).ToList();
+                if (this.Tasks == null) this.Tasks = new List<TasksFileContainer>();
                 
                 foreach(var file in currentFiles.Where(x=>
                 this.TasksLastModified == null
@@ -88,13 +94,19 @@ namespace Com.H.Threading.Scheduler
                 {
                     try
                     {
-                        var dicRecordsToRemove = Tasks.Where(x => x.Key.EqualsIgnoreCase(file.FullName));
+                        var dicRecordsToRemove = Tasks.Where(x => x.FileName.EqualsIgnoreCase(file.FullName));
                         var tasksToAdd = XElement.Load(file.FullName)
                                 .Elements().Select(x => new XmlHTaskItem(this, x) { FullName = file.FullName });
                         foreach (var item in dicRecordsToRemove)
-                            this.Tasks.TryRemove(item);
+                            this.Tasks.Remove(item);
                         foreach (var taskToAdd in tasksToAdd)
-                            this.Tasks.TryAdd(file.FullName, taskToAdd);
+                        {
+                            this.Tasks.Add(new TasksFileContainer()
+                            {
+                                FileName = file.FullName,
+                                Task = taskToAdd
+                            });
+                        }
                     }
                     catch(Exception ex)
                     {
@@ -109,7 +121,7 @@ namespace Com.H.Threading.Scheduler
 
                 this.TasksLastModified = currentDate;
                 this.TasksFileCount = currentFileCount;
-                return this.Tasks.Values;
+                return this.Tasks.Select(x => x.Task).ToList();
             }
         }
 

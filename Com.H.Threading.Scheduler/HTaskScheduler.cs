@@ -86,6 +86,7 @@ namespace Com.H.Threading.Scheduler
                     throw new FileNotFoundException(this.XmlConfigPath);
                 return;
             }
+            
             this.Tasks = new XmlFileHTaskCollection(this.XmlConfigPath);
             
             this.TimeLog = new XmlFileHTaskTimeLogger(
