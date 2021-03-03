@@ -86,7 +86,6 @@ namespace Com.H.Threading.Scheduler
                     throw new FileNotFoundException(this.XmlConfigPath);
                 return;
             }
-            Console.WriteLine("before loading tasks");
             this.Tasks = new XmlFileHTaskCollection(this.XmlConfigPath);
             
             this.TimeLog = new XmlFileHTaskTimeLogger(
