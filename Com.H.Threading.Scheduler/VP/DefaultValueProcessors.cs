@@ -42,12 +42,13 @@ namespace Com.H.Threading.Scheduler.VP
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)?
             .ContainsIgnoreCase(contentType) ?? false);
 
-        public static (string BeginMarker, string EndMarker) GetVarMarkers(
+        public static (string BeginMarker, string EndMarker, string NullValue) GetVarMarkers(
             this ValueProcessorItem valueItem)
         {
             var beginMarker = valueItem?.Item?.Attributes?["open-marker"] ?? "{{";
             var endMarker = valueItem?.Item?.Attributes?["close-marker"] ?? "}}";
-            return (beginMarker, endMarker);
+            var nullValue = valueItem?.Item?.Attributes?["close-marker"] ?? "";
+            return (beginMarker, endMarker, nullValue);
         }
 
         public static ValueProcessorItem UriProcessor(this ValueProcessorItem valueItem, CancellationToken? token = null)
@@ -88,7 +89,11 @@ namespace Com.H.Threading.Scheduler.VP
                 return valueItem;
             var markers = valueItem.GetVarMarkers();
             valueItem.Value = valueItem.Value
-                .Fill(valueItem.Item.Vars.Custom, markers.BeginMarker, markers.EndMarker);
+                .Fill(valueItem.Item.Vars.Custom, 
+                markers.BeginMarker, 
+                markers.EndMarker,
+                markers.NullValue
+                );
             return valueItem;
         }
 
