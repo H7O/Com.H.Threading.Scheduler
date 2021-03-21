@@ -65,10 +65,6 @@ namespace Com.H.Threading.Scheduler
         }
         #endregion
         #region load from disk
-        public static void Debug()
-        {
-            Console.WriteLine("inside tasks collection");
-        }
         private ICollection<IHTaskItem> GetTasks()
         {
             if (!File.Exists(this.BasePath)
