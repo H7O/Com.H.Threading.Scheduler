@@ -65,6 +65,10 @@ namespace Com.H.Threading.Scheduler
         }
         #endregion
         #region load from disk
+        public static void Debug()
+        {
+            Console.WriteLine("inside tasks collection");
+        }
         private ICollection<IHTaskItem> GetTasks()
         {
             if (!File.Exists(this.BasePath)
@@ -73,8 +77,8 @@ namespace Com.H.Threading.Scheduler
                 throw new FileNotFoundException(this.BasePath);
             var currentFiles = this.BasePath.ListFiles(true, @".*\.xml$");
             var currentDate = currentFiles.Select(x => x.LastWriteTime).Max();
-            var currentFileCount = currentFiles.Count();
 
+            var currentFileCount = currentFiles.Count();
 
             lock (this.TaskLock)
             {
@@ -94,19 +98,15 @@ namespace Com.H.Threading.Scheduler
                 {
                     try
                     {
-                        var dicRecordsToRemove = Tasks.Where(x => x.FileName.EqualsIgnoreCase(file.FullName));
                         var tasksToAdd = XElement.Load(file.FullName)
-                                .Elements().Select(x => new XmlHTaskItem(this, x) { FullName = file.FullName });
-                        foreach (var item in dicRecordsToRemove)
-                            this.Tasks.Remove(item);
-                        foreach (var taskToAdd in tasksToAdd)
-                        {
-                            this.Tasks.Add(new TasksFileContainer()
-                            {
-                                FileName = file.FullName,
-                                Task = taskToAdd
-                            });
-                        }
+                                .Elements().Select(x =>
+                                new TasksFileContainer()
+                                {  
+                                    Task = new XmlHTaskItem(this, x) { FullName = file.FullName },
+                                    FileName = file.FullName
+                                });
+                        this.Tasks.RemoveAll(x => x.FileName.EqualsIgnoreCase(file.FullName));
+                        this.Tasks.AddRange(tasksToAdd);
                     }
                     catch(Exception ex)
                     {
@@ -117,12 +117,12 @@ namespace Com.H.Threading.Scheduler
                         throw new FormatException($"XML format error trying to load {file.FullName}: {ex.Message}");
                     }
 
-                }
+                } 
 
                 this.TasksLastModified = currentDate;
                 this.TasksFileCount = currentFileCount;
                 return this.Tasks.Select(x => x.Task).ToList();
-            }
+            } // lock end
         }
 
         #endregion
