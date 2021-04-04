@@ -73,8 +73,8 @@ namespace Com.H.Threading.Scheduler.VP
                 return valueItem;
             valueItem.Value = valueItem.Value.FillDate(valueItem.Item.Vars?.Now, "{now{")
                 .FillDate(valueItem.Item.Vars?.Tomorrow, "{tomorrow{")
-                .Replace("{dir{sys}}", Directory.GetCurrentDirectory())
-                .Replace("{dir{uri}}", new Uri(Directory.GetCurrentDirectory())
+                .Replace("{dir{sys}}", AppDomain.CurrentDomain.BaseDirectory)
+                .Replace("{dir{uri}}", new Uri(AppDomain.CurrentDomain.BaseDirectory)
                 .AbsoluteUri)
                 ;
             return valueItem;
