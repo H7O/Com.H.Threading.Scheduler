@@ -4,7 +4,7 @@
     <TargetFramework>net5.0</TargetFramework>
     <Version>1.0.9</Version>
     <Description>An easy to use, simple yet feature-rich open-source framework for writing middlewares in the form of a low resource footnote Windows services or Linux Daemons.
-Takes care of craceful multi-threaded service granular scheduling, shutdowns, restarts, error recovery.</Description>
+Takes care of multi-threaded service granular scheduling, shutdowns, restarts, error recovery.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/H7O/Com.H.Threading.Scheduler</PackageProjectUrl>
     <RepositoryUrl>https://github.com/H7O/Com.H.Threading.Scheduler</RepositoryUrl>
@@ -23,9 +23,6 @@ Takes care of craceful multi-threaded service granular scheduling, shutdowns, re
   <ItemGroup>
     <Reference Include="Com.H">
       <HintPath>..\..\Com.H\Com.H\bin\Release\net5.0\Com.H.dll</HintPath>
-    </Reference>
-    <Reference Include="Com.H.Data">
-      <HintPath>..\..\Com.H.Data\Com.H.Data\bin\Release\net5.0\Com.H.Data.dll</HintPath>
     </Reference>
   </ItemGroup>
 

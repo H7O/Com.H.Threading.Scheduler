@@ -12,6 +12,7 @@ using System.Text.Json;
 using Com.H.Text.Json;
 using Com.H.Xml.Linq;
 using System.IO;
+using Com.H.IO;
 
 namespace Com.H.Threading.Scheduler.VP
 {
@@ -73,8 +74,15 @@ namespace Com.H.Threading.Scheduler.VP
                 return valueItem;
             valueItem.Value = valueItem.Value.FillDate(valueItem.Item.Vars?.Now, "{now{")
                 .FillDate(valueItem.Item.Vars?.Tomorrow, "{tomorrow{")
-                .Replace("{dir{sys}}", AppDomain.CurrentDomain.BaseDirectory)
-                .Replace("{dir{uri}}", new Uri(AppDomain.CurrentDomain.BaseDirectory)
+                .Replace("{dir{sys}}", AppDomain.CurrentDomain.BaseDirectory
+                ?.UnifyPathSeperator()
+                //.Replace("\\", "/")
+                //.Replace("//", "/")
+                )
+                .Replace("{dir{uri}}", new Uri(
+                    AppDomain.CurrentDomain.BaseDirectory
+                    ?.UnifyPathSeperator()
+                    )
                 .AbsoluteUri)
                 ;
             return valueItem;
