@@ -1,5 +1,5 @@
 # Com.H.Threading.Scheduler
-An easy to use, simple, yet feature-rich open-source framework for writing middlewares in the form of low resource footnote Windows services and/or Linux Daemons.
+An easy to use, simple, yet feature-rich open-source framework for writing middlewares in the form of low resource footnote Windows services, Linux Daemons and/or Microservices.
  
 ## What's the purpose of this library?
 This library helps build solutions that require some of their time sensitive logic to conditinally run as a background process without user input.
