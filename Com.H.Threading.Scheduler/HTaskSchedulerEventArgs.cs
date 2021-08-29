@@ -46,19 +46,19 @@ namespace Com.H.Threading.Scheduler
         /// the first value will be returned.
         /// </returns>
         public string this[string index]
-        { 
+        {
             get
             {
                 try
                 {
-                    return this.GetItem(index)?.GetValue(); 
+                    return this.GetItem(index)?.GetValue();
                 }
                 catch { }
                 return null;
             }
-                        
+
         }
-        
+
 
         #endregion
 
@@ -78,17 +78,39 @@ namespace Com.H.Threading.Scheduler
 
         #region getters
         public IHTaskItem GetItem(string index)
-            => this.Task.GetItem(index);
+        => index?.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
+                                    .Aggregate((IHTaskItem)null, (i, n) =>
+                                   i?.Children?.FirstOrDefault(x => x.Name.EqualsIgnoreCase(n)) ??
+                                   this.Task[n]);
 
         public IEnumerable<IHTaskItem> GetItems(string index)
-        => this.Task.GetItems(index);
+        => index?.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
+                                    .Aggregate((IEnumerable<IHTaskItem>)null, (i, n) =>
+                                   i?.SelectMany(x => x.Children)?.Where(c => c.Name.EqualsIgnoreCase(n)) ??
+                                   this.Task?.Children?.Where(x => x.Name.EqualsIgnoreCase(n)));
 
 
         public IEnumerable<string> GetValues(string index)
-        => this.Task.GetValues(index);
+        => this.GetItems(index).Select(x =>
+        {
+            try
+            {
+                return x?.GetValue();
+            }
+            catch { }
+            return null;
+        });
 
         public IEnumerable<dynamic> GetModels(string index)
-        => this.Task.GetModels(index);
+        => this.GetItems(index).Select(x =>
+        {
+            try
+            {
+                return x?.GetModel();
+            }
+            catch { }
+            return null;
+        });
 
         #endregion
     }

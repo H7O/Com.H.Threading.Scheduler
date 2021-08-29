@@ -44,11 +44,10 @@ namespace Com.H.Threading.Scheduler
                 if (this.Children == null
                     || string.IsNullOrWhiteSpace(name)) return null;
 
-                return this.GetItem(name);
-                    //this.Children.FirstOrDefault(x =>
-                    //x.Name != null
-                    //&& x.Name.ToUpper(CultureInfo.InvariantCulture)
-                    //.Equals(name.ToUpper(CultureInfo.InvariantCulture)));
+                return this.Children.FirstOrDefault(x =>
+                    x.Name != null
+                    && x.Name.ToUpper(CultureInfo.InvariantCulture)
+                    .Equals(name.ToUpper(CultureInfo.InvariantCulture)));
             }
         }
         #endregion
@@ -56,7 +55,7 @@ namespace Com.H.Threading.Scheduler
         #region constructor
         public XmlHTaskItem(IHTaskCollection hTasks, XElement element, IHTaskItem parent = null, CancellationToken? token = null)
         {
-            this.AllTasks = hTasks?? throw new ArgumentNullException(nameof(hTasks));
+            this.AllTasks = hTasks ?? throw new ArgumentNullException(nameof(hTasks));
             this.Element = element ?? throw new ArgumentNullException(nameof(element));
             this.RawValue = this.Element.Value;
             this.Parent = parent;
@@ -72,35 +71,35 @@ namespace Com.H.Threading.Scheduler
             XmlHTaskItem schedulerItem = null;
             this.Schedule = this.Element.Element("sys") == null ? parent?.Schedule
                 : new HTaskControlProperties(
-                    schedulerItem = new XmlHTaskItem(this.AllTasks, 
+                    schedulerItem = new XmlHTaskItem(this.AllTasks,
                     this.Element.Element("sys"), this, this.Cts?.Token));
 
             this.Vars = new DefaultVars()
             {
-                Now = this.Schedule?.Now 
+                Now = this.Schedule?.Now
                     ?? this.Parent?.Vars?.Now
                     ?? DateTime.Now,
-                Tomorrow = this.Schedule?.Tomorrow 
-                    ?? this.Parent?.Vars?.Tomorrow 
+                Tomorrow = this.Schedule?.Tomorrow
+                    ?? this.Parent?.Vars?.Tomorrow
                     ?? DateTime.Today.AddDays(1),
             };
 
 
             this.Children = this.Element.Elements()?
-                .Where(x=>!x.Name.LocalName.Equals("sys"))?
+                .Where(x => !x.Name.LocalName.Equals("sys"))?
                 .Select(x =>
             new XmlHTaskItem(this.AllTasks, x, this, this.Cts?.Token))?
-            .ToArray() 
+            .ToArray()
                 ?? Array.Empty<XmlHTaskItem>();
             if (schedulerItem != null)
                 this.Children = this.Children.Union(new XmlHTaskItem[] { schedulerItem }).ToArray();
 
-                
+
         }
         #endregion
 
 
-        #region get
+        #region get value
 
         private ValueProcessorItem GetValueProcessorItem()
         =>
@@ -108,8 +107,8 @@ namespace Com.H.Threading.Scheduler
                 this.AllTasks?.ValueProcessors?
                .OrdinalFilter(
                    this.ContentSettings?.Type?
-                   .Split(new string[] {",", "=>", "->", ">"}, 
-                       StringSplitOptions.RemoveEmptyEntries 
+                   .Split(new string[] { ",", "=>", "->", ">" },
+                       StringSplitOptions.RemoveEmptyEntries
                        | StringSplitOptions.TrimEntries))
                 ?? Array.Empty<ValueProcessor>()
                 , ValueProcessorItem.Parse(this)
@@ -117,7 +116,7 @@ namespace Com.H.Threading.Scheduler
                 , (i, n) => n(i, this.Cts?.Token)
                 .DefaultVarsProcessor().CustomVarsProcessor()
                 );
-        
+
 
         public string GetValue()
         {
@@ -152,7 +151,7 @@ namespace Com.H.Threading.Scheduler
             {
                 T GetContent()
                 {
-                    return (T) this.GetValueProcessorItem()?.Data;
+                    return (T)this.GetValueProcessorItem()?.Data;
                 }
                 if (this.ContentSettings.CachePeriod == ContentCachePeriod.None)
                     return GetContent();
@@ -175,13 +174,13 @@ namespace Com.H.Threading.Scheduler
 
 
         public IHTaskItem GetItem(string index)
-        => index?.Split(new char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries)
+        => index?.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
                                     .Aggregate((IHTaskItem)null, (i, n) =>
                                    i?.Children?.FirstOrDefault(x => x.Name.EqualsIgnoreCase(n)) ??
                                    this[n]);
 
         public IEnumerable<IHTaskItem> GetItems(string index)
-        => index?.Split(new char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries)
+        => index?.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
                                     .Aggregate((IEnumerable<IHTaskItem>)null, (i, n) =>
                                    i?.SelectMany(x => x.Children)?.Where(c => c.Name.EqualsIgnoreCase(n)) ??
                                    this?.Children?.Where(x => x.Name.EqualsIgnoreCase(n)));
