@@ -78,43 +78,16 @@ namespace Com.H.Threading.Scheduler
 
         #region getters
         public IHTaskItem GetItem(string index)
-        //=> index?.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
-        //                            .Aggregate((IHTaskItem)null, (i, n) =>
-        //                           i?.Children?.FirstOrDefault(x => x.Name.EqualsIgnoreCase(n)) ??
-        //                           this.Task[n]);
-
             => this.Task.GetItem(index);
 
         public IEnumerable<IHTaskItem> GetItems(string index)
-        //=> index?.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
-        //                            .Aggregate((IEnumerable<IHTaskItem>)null, (i, n) =>
-        //                           i?.SelectMany(x => x.Children)?.Where(c => c.Name.EqualsIgnoreCase(n)) ??
-        //                           this.Task?.Children?.Where(x => x.Name.EqualsIgnoreCase(n)));
-                    => this.Task.GetItems(index);
+            => this.Task.GetItems(index);
 
         public IEnumerable<string> GetValues(string index)
-        //=> this.GetItems(index).Select(x =>
-        //{
-        //    try
-        //    {
-        //        return x?.GetValue();
-        //    }
-        //    catch { }
-        //    return null;
-        //});
-        => this.Task.GetValues(index);
+            => this.Task.GetValues(index);
 
         public IEnumerable<dynamic> GetModels(string index)
-        //=> this.GetItems(index).Select(x =>
-        //{
-        //    try
-        //    {
-        //        return x?.GetModel();
-        //    }
-        //    catch { }
-        //    return null;
-        //});
-        => this.Task.GetModels(index);
+            => this.Task.GetModels(index);
 
         #endregion
     }

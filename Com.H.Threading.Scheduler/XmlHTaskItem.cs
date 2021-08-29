@@ -37,20 +37,19 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
         #region indexer
-        public IHTaskItem this[string name]
-        {
-            get
-            {
-                if (this.Children == null
-                    || string.IsNullOrWhiteSpace(name)) return null;
-
-                return this.Children.FirstOrDefault(x =>
-                    x.Name != null
-                    && x.Name.ToUpper(CultureInfo.InvariantCulture)
-                    .Equals(name.ToUpper(CultureInfo.InvariantCulture)));
-            }
-        }
+        public IHTaskItem this[string name] { get => GetItem(name); }
         #endregion
+
+        private IHTaskItem GetDirectChild(string name)
+        {
+            if (this.Children == null
+                || string.IsNullOrWhiteSpace(name)) return null;
+
+            return this.Children.FirstOrDefault(x =>
+                x.Name != null
+                && x.Name.ToUpper(CultureInfo.InvariantCulture)
+                .Equals(name.ToUpper(CultureInfo.InvariantCulture)));
+        }
 
         #region constructor
         public XmlHTaskItem(IHTaskCollection hTasks, XElement element, IHTaskItem parent = null, CancellationToken? token = null)
@@ -105,7 +104,7 @@ namespace Com.H.Threading.Scheduler
             => index?.Split(new char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries)
                             .Aggregate((IHTaskItem)null, (i, n) =>
                            i?.Children?.FirstOrDefault(x => x.Name.EqualsIgnoreCase(n)) ??
-                           this[n]);
+                           GetDirectChild(n));
         public IEnumerable<IHTaskItem> GetItems(string index)
         => index?.Split(new char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries)
                                     .Aggregate((IEnumerable<IHTaskItem>)null, (i, n) =>
