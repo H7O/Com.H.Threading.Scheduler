@@ -72,10 +72,10 @@ namespace Com.H.Threading.Scheduler
         /// Refernce to all existing tasks loaded from configuration
         /// </summary>
         IHTaskCollection AllTasks { get; }
-        //IHTaskItem GetItem(string index);
-        //IEnumerable<IHTaskItem> GetItems(string index);
-        //public IEnumerable<string> GetValues(string index);
-        //public IEnumerable<dynamic> GetModels(string index);
+        IHTaskItem GetItem(string index);
+        IEnumerable<IHTaskItem> GetItems(string index);
+        public IEnumerable<string> GetValues(string index);
+        public IEnumerable<dynamic> GetModels(string index);
 
 
     }

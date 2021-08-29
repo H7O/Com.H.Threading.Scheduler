@@ -99,7 +99,41 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
 
-        #region get value
+        #region get
+
+        public IHTaskItem GetItem(string index)
+            => index?.Split(new char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries)
+                            .Aggregate((IHTaskItem)null, (i, n) =>
+                           i?.Children?.FirstOrDefault(x => x.Name.EqualsIgnoreCase(n)) ??
+                           this[n]);
+        public IEnumerable<IHTaskItem> GetItems(string index)
+        => index?.Split(new char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries)
+                                    .Aggregate((IEnumerable<IHTaskItem>)null, (i, n) =>
+                                   i?.SelectMany(x => x.Children)?.Where(c => c.Name.EqualsIgnoreCase(n)) ??
+                                   this?.Children?.Where(x => x.Name.EqualsIgnoreCase(n)));
+
+        public IEnumerable<string> GetValues(string index)
+        => this.GetItems(index).Select(x =>
+        {
+            try
+            {
+                return x?.GetValue();
+            }
+            catch { }
+            return null;
+        });
+
+        public IEnumerable<dynamic> GetModels(string index)
+        => this.GetItems(index).Select(x =>
+        {
+            try
+            {
+                return x?.GetModel();
+            }
+            catch { }
+            return null;
+        });
+
 
         private ValueProcessorItem GetValueProcessorItem()
         =>
@@ -173,39 +207,6 @@ namespace Com.H.Threading.Scheduler
         }
 
 
-        public IHTaskItem GetItem(string index)
-        => index?.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
-                                    .Aggregate((IHTaskItem)null, (i, n) =>
-                                   i?.Children?.FirstOrDefault(x => x.Name.EqualsIgnoreCase(n)) ??
-                                   this[n]);
-
-        public IEnumerable<IHTaskItem> GetItems(string index)
-        => index?.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
-                                    .Aggregate((IEnumerable<IHTaskItem>)null, (i, n) =>
-                                   i?.SelectMany(x => x.Children)?.Where(c => c.Name.EqualsIgnoreCase(n)) ??
-                                   this?.Children?.Where(x => x.Name.EqualsIgnoreCase(n)));
-
-        public IEnumerable<string> GetValues(string index)
-        => this.GetItems(index).Select(x =>
-        {
-            try
-            {
-                return x?.GetValue();
-            }
-            catch { }
-            return null;
-        });
-
-        public IEnumerable<dynamic> GetModels(string index)
-        => this.GetItems(index).Select(x =>
-        {
-            try
-            {
-                return x?.GetModel();
-            }
-            catch { }
-            return null;
-        });
 
 
 
