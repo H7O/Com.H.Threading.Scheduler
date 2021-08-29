@@ -44,10 +44,11 @@ namespace Com.H.Threading.Scheduler
                 if (this.Children == null
                     || string.IsNullOrWhiteSpace(name)) return null;
 
-                return this.Children.FirstOrDefault(x =>
-                    x.Name != null
-                    && x.Name.ToUpper(CultureInfo.InvariantCulture)
-                    .Equals(name.ToUpper(CultureInfo.InvariantCulture)));
+                return this.GetItem(name);
+                    //this.Children.FirstOrDefault(x =>
+                    //x.Name != null
+                    //&& x.Name.ToUpper(CultureInfo.InvariantCulture)
+                    //.Equals(name.ToUpper(CultureInfo.InvariantCulture)));
             }
         }
         #endregion
@@ -99,7 +100,7 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
 
-        #region get value
+        #region get
 
         private ValueProcessorItem GetValueProcessorItem()
         =>
@@ -174,13 +175,13 @@ namespace Com.H.Threading.Scheduler
 
 
         public IHTaskItem GetItem(string index)
-        => index?.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
+        => index?.Split(new char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries)
                                     .Aggregate((IHTaskItem)null, (i, n) =>
                                    i?.Children?.FirstOrDefault(x => x.Name.EqualsIgnoreCase(n)) ??
                                    this[n]);
 
         public IEnumerable<IHTaskItem> GetItems(string index)
-        => index?.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
+        => index?.Split(new char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries)
                                     .Aggregate((IEnumerable<IHTaskItem>)null, (i, n) =>
                                    i?.SelectMany(x => x.Children)?.Where(c => c.Name.EqualsIgnoreCase(n)) ??
                                    this?.Children?.Where(x => x.Name.EqualsIgnoreCase(n)));
