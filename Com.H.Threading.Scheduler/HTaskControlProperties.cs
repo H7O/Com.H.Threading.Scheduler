@@ -16,7 +16,7 @@ namespace Com.H.Threading.Scheduler
 
         #region properties
         private IHTaskItem TaskItem { get; set; }
-        private CachedRun Cache { get; set; }
+        private CachedRunDeprecated Cache { get; set; }
 
        
         public bool Enabled
@@ -191,7 +191,7 @@ namespace Com.H.Threading.Scheduler
 
         #region constructor
         public HTaskControlProperties(IHTaskItem item)
-        => (this.TaskItem, this.Cache) = (item, new CachedRun());
+        => (this.TaskItem, this.Cache) = (item, new CachedRunDeprecated());
 
         #endregion
 

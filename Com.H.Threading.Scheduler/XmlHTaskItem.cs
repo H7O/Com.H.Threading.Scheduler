@@ -31,7 +31,7 @@ namespace Com.H.Threading.Scheduler
         public IHTaskItemAttr Attributes { get; init; }
         public ICollection<IHTaskItem> Children { get; private set; }
         public IHTaskControlProperties Schedule { get; init; }
-        private CachedRun Cache { get; set; }
+        private CachedRunDeprecated Cache { get; set; }
         public IHTaskCollection AllTasks { get; init; }
 
         #endregion
@@ -162,7 +162,7 @@ namespace Com.H.Threading.Scheduler
                 if (this.ContentSettings.CachePeriod == ContentCachePeriod.None)
                     return GetContent();
                 if (this.Cache == null)
-                    this.Cache = new CachedRun();
+                    this.Cache = new CachedRunDeprecated();
                 return this.ContentSettings.CachePeriod ==
                     ContentCachePeriod.Miliseconds ?
                     this.Cache.Run(GetContent,
@@ -189,7 +189,7 @@ namespace Com.H.Threading.Scheduler
                 if (this.ContentSettings.CachePeriod == ContentCachePeriod.None)
                     return GetContent();
                 if (this.Cache == null)
-                    this.Cache = new CachedRun();
+                    this.Cache = new CachedRunDeprecated();
                 return this.ContentSettings.CachePeriod ==
                     ContentCachePeriod.Miliseconds ?
                     this.Cache.Run(GetContent,
