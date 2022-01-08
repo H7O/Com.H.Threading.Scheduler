@@ -189,7 +189,7 @@ namespace Com.H.Threading.Scheduler
 
                 if (task.Schedule?.Repeat != null)
                 {
-                    AtomicGate delaySwitch = new AtomicGate();
+                    var delaySwitch = new AtomicGate();
 
                     foreach (var repeatDataModel in task.Schedule?.Repeat.EnsureEnumerable())
                     {

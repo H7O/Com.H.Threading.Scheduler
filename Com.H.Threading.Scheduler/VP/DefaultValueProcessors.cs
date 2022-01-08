@@ -22,7 +22,7 @@ namespace Com.H.Threading.Scheduler.VP
         public string Value { get; set; }
         public dynamic Data { get; set; }
         public static ValueProcessorItem Parse(IHTaskItem item)
-            => new ValueProcessorItem()
+            => new ()
             {
                 Item = item,
                 Value = item?.RawValue
@@ -94,12 +94,12 @@ namespace Com.H.Threading.Scheduler.VP
                 valueItem.Item.Vars?.Custom == null
                 )
                 return valueItem;
-            var markers = valueItem.GetVarMarkers();
+            var (beginMarker, endMarker, nullValue) = valueItem.GetVarMarkers();
             valueItem.Value = valueItem.Value
                 .Fill(valueItem.Item.Vars.Custom, 
-                markers.BeginMarker, 
-                markers.EndMarker,
-                markers.NullValue
+                    beginMarker, 
+                    endMarker,
+                    nullValue
                 );
             return valueItem;
         }
