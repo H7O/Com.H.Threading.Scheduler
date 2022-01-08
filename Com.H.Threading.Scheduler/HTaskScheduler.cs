@@ -13,7 +13,6 @@ namespace Com.H.Threading.Scheduler
 {
     public class HTaskScheduler : IDisposable
     {
-
         #region properties
         /// <summary>
         /// The time interval in miliseconds of how often the schedular checks on tasks eligibility to run.

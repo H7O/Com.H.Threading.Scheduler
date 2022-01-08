@@ -12,7 +12,10 @@ namespace Com.H.Threading.Scheduler
 {
     public class HTaskControlProperties : IHTaskControlProperties, IDisposable
     {
-        
+        public static void Debug()
+        {
+            Console.WriteLine("test");
+        }
 
         #region properties
         private IHTaskItem TaskItem { get; set; }

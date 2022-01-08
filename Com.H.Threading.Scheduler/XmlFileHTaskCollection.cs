@@ -10,6 +10,8 @@ using System.Threading;
 using Com.H.Threading.Scheduler.VP;
 using Com.H.IO;
 using Com.H.Text;
+using System.Text.RegularExpressions;
+using System.Reflection;
 
 namespace Com.H.Threading.Scheduler
 {
@@ -56,6 +58,7 @@ namespace Com.H.Threading.Scheduler
                 throw new FileNotFoundException(this.BasePath);
 
             this.ValueProcessors = new ConcurrentDictionary<string, ValueProcessor>();
+            AddCustomPlugins();
             this.ValueProcessors.TryAdd("uri", DefaultValueProcessors.UriProcessor);
             this.ValueProcessors.TryAdd("csv", DefaultValueProcessors.CsvDataModelProcessor);
             this.ValueProcessors.TryAdd("psv", DefaultValueProcessors.PsvDataModelProcessor);
@@ -63,6 +66,37 @@ namespace Com.H.Threading.Scheduler
             this.ValueProcessors.TryAdd("xml", DefaultValueProcessors.XmlDataModelProcessor);
 
         }
+        private void AddCustomPlugins()
+        {
+            var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+                .Select(x => Path.GetFileName(x.Location));
+
+            foreach (string file in Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, 
+                "Com.H.Threading.Scheduler.VP.*.dll")
+                .Except(loadedAssemblies)
+                )
+            {
+                var type = Regex.Match(file, @".*\.(?<type>.*)\.[dlD][l|L]{2}$")
+                    .Groups["type"]?
+                    .Value?.ToLower();
+                if (string.IsNullOrWhiteSpace(type)) continue;
+                // Console.WriteLine($"file = {file}, type = {type}");
+                // continue;
+                foreach (Type assemblyType in Assembly.LoadFrom(file).GetTypes())
+                {
+                    if (typeof(IValueProcessor).IsAssignableFrom(assemblyType))
+                    {
+                        //Console.WriteLine($"vp : {type} added = " +
+                        _ = this.ValueProcessors.TryAdd(type,
+                            ((IValueProcessor)Activator.CreateInstance(assemblyType)).GetProcessor);
+                            //);
+                    }
+                }
+            }
+
+        }
+
+
         #endregion
         #region load from disk
         private ICollection<IHTaskItem> GetTasks()

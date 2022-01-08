@@ -16,6 +16,21 @@ using Com.H.IO;
 
 namespace Com.H.Threading.Scheduler.VP
 {
+    /// <summary>
+    /// For implementing custom value processors.
+    /// </summary>
+    public interface IValueProcessor
+    {
+        /// <summary>
+        /// Takes previous ValueProcessorItem in value processors pipeline, 
+        /// process the item and returns the new modified item back to the pipeline.
+        /// </summary>
+        /// <param name="valueItem">Value item expected from the value processor pipeline</param>
+        /// <param name="token">Cancellation token expected from the value processor pipeline</param>
+        /// <returns></returns>
+        ValueProcessorItem GetProcessor(ValueProcessorItem valueItem,
+            CancellationToken? token = null);
+    }
     public class ValueProcessorItem
     {
         public IHTaskItem Item { get; set; }
