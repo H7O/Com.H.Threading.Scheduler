@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <Version>1.0.9</Version>
+    <Version>1.0.10</Version>
     <Description>An easy to use, simple yet feature-rich open-source framework for writing middlewares in the form of a low resource footnote Windows services, Linux Daemons or as micro-service.
 Takes care of multi-threaded service granular scheduling, shutdowns, restarts, error recovery.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -21,9 +21,7 @@ Takes care of multi-threaded service granular scheduling, shutdowns, restarts, e
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Com.H">
-      <HintPath>..\..\Com.H\Com.H\bin\Release\net5.0\Com.H.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Com.H" Version="0.2.1" />
   </ItemGroup>
 
 </Project>
