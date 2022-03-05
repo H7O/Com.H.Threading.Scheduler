@@ -53,7 +53,8 @@ namespace Com.H.Threading.Scheduler.VP
         =>
             string.IsNullOrWhiteSpace(valueItem.Value ?? valueItem?.Item?.RawValue) == false
             &&
-            (valueItem?.Item?.Attributes?["content_type"]?
+            ((valueItem?.Item?.Attributes?["content_type"]
+                ?? valueItem?.Item?.Attributes?["content-type"])?
             .Split(new string[] { ",", "->", "=>", ">" },
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)?
             .ContainsIgnoreCase(contentType) ?? false);

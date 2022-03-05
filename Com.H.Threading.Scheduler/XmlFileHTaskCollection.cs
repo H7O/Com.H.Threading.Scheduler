@@ -76,7 +76,7 @@ namespace Com.H.Threading.Scheduler
                 .Except(loadedAssemblies)
                 )
             {
-                var type = Regex.Match(file, @".*\.(?<type>.*)\.[dlD][l|L]{2}$")
+                var type = Regex.Match(file, @".*\.(?<type>.*)\.[d|D][l|L]{2}$")
                     .Groups["type"]?
                     .Value?.ToLower();
                 if (string.IsNullOrWhiteSpace(type)) continue;

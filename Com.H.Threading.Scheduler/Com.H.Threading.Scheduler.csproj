@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <Version>1.0.10</Version>
+    <Version>5.0.13.1</Version>
     <Description>An easy to use, simple yet feature-rich open-source framework for writing middlewares in the form of a low resource footnote Windows services, Linux Daemons or as micro-service.
 Takes care of multi-threaded service granular scheduling, shutdowns, restarts, error recovery.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -15,13 +15,22 @@ Takes care of multi-threaded service granular scheduling, shutdowns, restarts, e
     <Authors>Hussein Al Bayati</Authors>
     <AnalysisLevel>latest</AnalysisLevel>
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
-    <AssemblyVersion>1.0.9.0</AssemblyVersion>
-    <FileVersion>1.0.9.0</FileVersion>
+    <AssemblyVersion>5.0.13.1</AssemblyVersion>
+    <FileVersion>5.0.13.1</FileVersion>
     <Copyright>Hussein Al Bayati</Copyright>
+    <PackageIcon>128x128.jpg</PackageIcon>
+    <PackageIconUrl />
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Com.H" Version="0.2.1" />
+    <PackageReference Include="Com.H" Version="5.0.13.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\..\..\2022\Base Libraries\Com.H\128x128.jpg">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

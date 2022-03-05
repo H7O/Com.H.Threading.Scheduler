@@ -89,6 +89,9 @@ namespace Com.H.Threading.Scheduler
         public IEnumerable<dynamic> GetModels(string index)
             => this.Task.GetModels(index);
 
+        public dynamic GetModel(string index)
+            => this.Task.GetItem(index)?.GetModel();
+
         #endregion
     }
 
