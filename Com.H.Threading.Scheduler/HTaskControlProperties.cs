@@ -38,8 +38,13 @@ namespace Com.H.Threading.Scheduler
             {
                 try
                 {
-                    return this.TaskItem["repeat"]?.Attributes["delay_interval"] == null ? null
-                        : int.Parse(this.TaskItem["repeat"]?.Attributes["delay_interval"]);
+                    return 
+                        (this.TaskItem["repeat"]?.Attributes["delay_interval"]??
+                        this.TaskItem["repeat"]?.Attributes["delay-interval"]) == null ? null
+                        : int.Parse(
+                            (this.TaskItem["repeat"]?.Attributes["delay_interval"] ??
+                                this.TaskItem["repeat"]?.Attributes["delay-interval"])
+                            );
                 }
                 catch { }
                 return null;
