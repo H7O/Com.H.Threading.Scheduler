@@ -163,6 +163,8 @@ namespace Com.H.Threading.Scheduler
                 // check if task is eligible to run including retry on error status (if failed to run in an earlier attempt and the schedule
                 // for when to retry and retry max attempts).
 
+                // reset vars for the session
+                task.Vars = null;
 
                 if (!this.IsDue(task)) return;
 

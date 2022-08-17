@@ -24,7 +24,31 @@ namespace Com.H.Threading.Scheduler
         public ContentSettings ContentSettings { get; init; }
         private CancellationTokenSource Cts { get; set; }
         private bool disposedValue;
-        public DefaultVars Vars { get; init; }
+        private DefaultVars vars = null;
+        public DefaultVars Vars
+        {
+            get
+            {
+                if (this.Parent?.Vars is not null) return this.Parent.Vars;
+                if (vars is not null) return vars;
+                this.vars = new DefaultVars()
+                {
+                    Now = this.Schedule?.Now
+                        // ?? this.Parent?.Vars?.Now
+                        ?? DateTime.Now,
+                    Tomorrow = this.Schedule?.Tomorrow
+                        // ?? this.Parent?.Vars?.Tomorrow
+                        ?? DateTime.Today.AddDays(1),
+                };
+                return vars;
+            }
+            set
+            {
+                // Console.WriteLine($"before resetting is value null = ${value is null}");
+                this.vars = value;
+                // Console.WriteLine($"after resetting is value null = ${value is null}");
+            }
+        }
         public string Name { get; init; }
         public string FullName { get; init; }
         public IHTaskItem Parent { get; init; }
@@ -73,15 +97,17 @@ namespace Com.H.Threading.Scheduler
                     schedulerItem = new XmlHTaskItem(this.AllTasks,
                     this.Element.Element("sys"), this, this.Cts?.Token));
 
-            this.Vars = new DefaultVars()
-            {
-                Now = this.Schedule?.Now
-                    ?? this.Parent?.Vars?.Now
-                    ?? DateTime.Now,
-                Tomorrow = this.Schedule?.Tomorrow
-                    ?? this.Parent?.Vars?.Tomorrow
-                    ?? DateTime.Today.AddDays(1),
-            };
+            // needs to be set in property only
+
+            //this.Vars = new DefaultVars()
+            //{
+            //    Now = this.Schedule?.Now
+            //        ?? this.Parent?.Vars?.Now
+            //        ?? DateTime.Now,
+            //    Tomorrow = this.Schedule?.Tomorrow
+            //        ?? this.Parent?.Vars?.Tomorrow
+            //        ?? DateTime.Today.AddDays(1),
+            //};
 
 
             this.Children = this.Element.Elements()?
@@ -135,21 +161,23 @@ namespace Com.H.Threading.Scheduler
 
 
         private ValueProcessorItem GetValueProcessorItem()
-        =>
-           Enumerable.Aggregate(
-                this.AllTasks?.ValueProcessors?
-               .OrdinalFilter(
-                   this.ContentSettings?.Type?
-                   .Split(new string[] { ",", "=>", "->", ">" },
-                       StringSplitOptions.RemoveEmptyEntries
-                       | StringSplitOptions.TrimEntries))
-                ?? Array.Empty<ValueProcessor>()
-                , ValueProcessorItem.Parse(this)
-                .DefaultVarsProcessor().CustomVarsProcessor()
-                , (i, n) => n(i, this.Cts?.Token)
-                .DefaultVarsProcessor().CustomVarsProcessor()
-                );
-
+        {
+            this.Vars = null;
+            return
+            Enumerable.Aggregate(
+                 this.AllTasks?.ValueProcessors?
+                .OrdinalFilter(
+                    this.ContentSettings?.Type?
+                    .Split(new string[] { ",", "=>", "->", ">" },
+                        StringSplitOptions.RemoveEmptyEntries
+                        | StringSplitOptions.TrimEntries))
+                 ?? Array.Empty<ValueProcessor>()
+                 , ValueProcessorItem.Parse(this)
+                 .DefaultVarsProcessor().CustomVarsProcessor()
+                 , (i, n) => n(i, this.Cts?.Token)
+                 .DefaultVarsProcessor().CustomVarsProcessor()
+                 );
+        }
 
         public string GetValue()
         {

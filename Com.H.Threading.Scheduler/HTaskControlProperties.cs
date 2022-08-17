@@ -176,9 +176,11 @@ namespace Com.H.Threading.Scheduler
             get
             {
                 var item = this.TaskItem["now"]?.GetValue();
-                if (item == null) return DateTime.Now;
-                if (DateTime.TryParse(item, out DateTime dateTime)) return dateTime;
-                return DateTime.Now;
+                if (item is null
+                    ||
+                    !DateTime.TryParse(item, out DateTime dateTime)
+                    ) return DateTime.Now;
+                return dateTime;
             }
         }
 
