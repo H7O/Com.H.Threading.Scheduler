@@ -25,7 +25,7 @@ namespace Com.H.Threading.Scheduler
         }
         #region properties
 
-        
+
         private List<TasksFileContainer> Tasks { get; set; }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Com.H.Threading.Scheduler
             if (string.IsNullOrWhiteSpace(taskCollectionPath))
                 throw new ArgumentNullException(nameof(taskCollectionPath));
             this.BasePath = taskCollectionPath;
-            if (!Directory.Exists(this.BasePath) 
+            if (!Directory.Exists(this.BasePath)
                 && !File.Exists(this.BasePath))
                 throw new FileNotFoundException(this.BasePath);
 
@@ -71,7 +71,7 @@ namespace Com.H.Threading.Scheduler
             var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
                 .Select(x => Path.GetFileName(x.Location));
 
-            foreach (string file in Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, 
+            foreach (string file in Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory,
                 "Com.H.Threading.Scheduler.VP.*.dll")
                 .Except(loadedAssemblies)
                 )
@@ -89,7 +89,7 @@ namespace Com.H.Threading.Scheduler
                         //Console.WriteLine($"vp : {type} added = " +
                         _ = this.ValueProcessors.TryAdd(type,
                             ((IValueProcessor)Activator.CreateInstance(assemblyType)).GetProcessor);
-                            //);
+                        //);
                     }
                 }
             }
@@ -118,10 +118,10 @@ namespace Com.H.Threading.Scheduler
                         && currentDate <= this.TasksLastModified
                         && currentFileCount == this.TasksFileCount
                         )
-                    return this.Tasks.Select(x=>x.Task).ToList();
+                    return this.Tasks.Select(x => x.Task).ToList();
                 if (this.Tasks == null) this.Tasks = new List<TasksFileContainer>();
-                
-                foreach(var file in currentFiles.Where(x=>
+
+                foreach (var file in currentFiles.Where(x =>
                 this.TasksLastModified == null
                 ||
                 x.LastWriteTime > this.TasksLastModified))
@@ -131,14 +131,14 @@ namespace Com.H.Threading.Scheduler
                         var tasksToAdd = XElement.Load(file.FullName)
                                 .Elements().Select(x =>
                                 new TasksFileContainer()
-                                {  
+                                {
                                     Task = new XmlHTaskItem(this, x) { FullName = file.FullName },
                                     FileName = file.FullName
                                 });
                         this.Tasks.RemoveAll(x => x.FileName.EqualsIgnoreCase(file.FullName));
                         this.Tasks.AddRange(tasksToAdd);
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         // todo: add error event to be consumed by the scheduler and 
                         // spit out via scheduler own OnError event.
@@ -147,7 +147,7 @@ namespace Com.H.Threading.Scheduler
                         throw new FormatException($"XML format error trying to load {file.FullName}: {ex.Message}");
                     }
 
-                } 
+                }
 
                 this.TasksLastModified = currentDate;
                 this.TasksFileCount = currentFileCount;

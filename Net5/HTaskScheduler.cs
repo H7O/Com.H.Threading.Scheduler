@@ -78,16 +78,16 @@ namespace Com.H.Threading.Scheduler
                     "no file path or tasks defined");
 
             if (string.IsNullOrWhiteSpace(this.XmlConfigPath) == false
-                && !File.Exists(this.XmlConfigPath)  
+                && !File.Exists(this.XmlConfigPath)
                 && !Directory.Exists(this.XmlConfigPath))
             {
                 if (this.Tasks?.Any() == false)
                     throw new FileNotFoundException(this.XmlConfigPath);
                 return;
             }
-            
+
             this.Tasks = new XmlFileHTaskCollection(this.XmlConfigPath);
-            
+
             this.TimeLog = new XmlFileHTaskTimeLogger(
                 Path.Combine(
                     Directory.GetParent(this.XmlConfigPath).FullName,
@@ -163,6 +163,8 @@ namespace Com.H.Threading.Scheduler
                 // check if task is eligible to run including retry on error status (if failed to run in an earlier attempt and the schedule
                 // for when to retry and retry max attempts).
 
+                // reset vars for the session
+                task.Vars = null;
 
                 if (!this.IsDue(task)) return;
 
@@ -278,8 +280,8 @@ namespace Com.H.Threading.Scheduler
 
             #region dates
             if (item.Schedule.Dates != null
-                && 
-                !item.Schedule.Dates.Any(x=>
+                &&
+                !item.Schedule.Dates.Any(x =>
                 timeNow >= x && timeNow < x.Date.AddDays(1))) return false;
 
             #endregion

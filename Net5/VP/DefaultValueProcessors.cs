@@ -37,7 +37,7 @@ namespace Com.H.Threading.Scheduler.VP
         public string Value { get; set; }
         public dynamic Data { get; set; }
         public static ValueProcessorItem Parse(IHTaskItem item)
-            => new ()
+            => new()
             {
                 Item = item,
                 Value = item?.RawValue
@@ -90,7 +90,7 @@ namespace Com.H.Threading.Scheduler.VP
                 return valueItem;
             valueItem.Value = valueItem.Value.FillDate(valueItem.Item.Vars?.Now, "{now{")
                 .FillDate(valueItem.Item.Vars?.Tomorrow, "{tomorrow{")
-                .Replace("{dir{sys}}", 
+                .Replace("{dir{sys}}",
                 AppDomain.CurrentDomain.BaseDirectory
                 .TrimEnd(Path.DirectorySeparatorChar)
                 )
@@ -112,8 +112,8 @@ namespace Com.H.Threading.Scheduler.VP
                 return valueItem;
             var (beginMarker, endMarker, nullValue) = valueItem.GetVarMarkers();
             valueItem.Value = valueItem.Value
-                .Fill(valueItem.Item.Vars.Custom, 
-                    beginMarker, 
+                .Fill(valueItem.Item.Vars.Custom,
+                    beginMarker,
                     endMarker,
                     nullValue
                 );

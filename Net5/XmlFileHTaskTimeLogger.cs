@@ -60,7 +60,7 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
         #region indexer
-        public TimeLog this[string key] 
+        public TimeLog this[string key]
         {
             get
             {
@@ -122,7 +122,7 @@ namespace Com.H.Threading.Scheduler
                             new XElement("key", new XCData(x.Key)),
                             new XElement("last_executed",
                                 new XCData(x.Value.LastExecuted?.ToString("yyyy-MM-dd HH:mm:ss.fffff",
-                                    CultureInfo.InvariantCulture)??string.Empty)),
+                                    CultureInfo.InvariantCulture) ?? string.Empty)),
                             new XElement("last_error",
                                 new XCData(x.Value.LastError?.ToString("yyyy-MM-dd HH:mm:ss.fffff",
                                     CultureInfo.InvariantCulture) ?? string.Empty)),
@@ -131,7 +131,7 @@ namespace Com.H.Threading.Scheduler
                                     CultureInfo.InvariantCulture)))
                             )));
             }
-            catch{ throw; }
+            catch { throw; }
             finally
             {
                 this.ExitReadLock();
@@ -164,23 +164,23 @@ namespace Com.H.Threading.Scheduler
                     XElement.Load(this.LogFilePath).Elements()
                     .ToDictionary(key => key.Element("key").Value,
                         value => new TimeLog()
-                        { 
+                        {
                             LastExecuted =
                              DateTime.TryParse(value.Element("last_executed")?.Value, out _) ?
                              (DateTime?)DateTime.ParseExact(value.Element("last_executed").Value,
                              "yyyy-MM-dd HH:mm:ss.fffff", CultureInfo.InvariantCulture)
-                            :null,
-                            LastError = 
-                                DateTime.TryParse(value.Element("last_error")?.Value, out _)?
-                                (DateTime?) DateTime.ParseExact(value.Element("last_error").Value,
+                            : null,
+                            LastError =
+                                DateTime.TryParse(value.Element("last_error")?.Value, out _) ?
+                                (DateTime?)DateTime.ParseExact(value.Element("last_error").Value,
                                 "yyyy-MM-dd HH:mm:ss.fffff", CultureInfo.InvariantCulture)
-                                :null,
+                                : null,
                             ErrorCount = int.Parse(value.Element("error_retry_count").Value
                             , CultureInfo.InvariantCulture)
                         }
                     ));
             }
-            catch 
+            catch
             {
                 bool cleanedUp = false;
                 try

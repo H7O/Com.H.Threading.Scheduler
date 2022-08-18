@@ -21,7 +21,7 @@ namespace Com.H.Threading.Scheduler
                 return null;
             }
         }
-        
+
         public XmlHTaskItemAttr(XElement element)
         {
             if (element == null) throw new ArgumentNullException(nameof(element));

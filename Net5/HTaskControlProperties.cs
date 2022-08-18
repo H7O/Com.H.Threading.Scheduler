@@ -17,13 +17,13 @@ namespace Com.H.Threading.Scheduler
         private IHTaskItem TaskItem { get; set; }
         private CachedRunDeprecated Cache { get; set; }
 
-       
+
         public bool Enabled
         {
             get
             {
                 if (this.TaskItem["enabled"] == null) return true;
-                return this.TaskItem["enabled"].GetValue()?.ContainsIgnoreCase("true")??false;
+                return this.TaskItem["enabled"].GetValue()?.ContainsIgnoreCase("true") ?? false;
             }
         }
 
@@ -38,8 +38,8 @@ namespace Com.H.Threading.Scheduler
             {
                 try
                 {
-                    return 
-                        (this.TaskItem["repeat"]?.Attributes["delay_interval"]??
+                    return
+                        (this.TaskItem["repeat"]?.Attributes["delay_interval"] ??
                         this.TaskItem["repeat"]?.Attributes["delay-interval"]) == null ? null
                         : int.Parse(
                             (this.TaskItem["repeat"]?.Attributes["delay_interval"] ??
@@ -151,7 +151,7 @@ namespace Com.H.Threading.Scheduler
         }
 
         public bool IgnoreLogOnRestart
-            =>this.TaskItem["ignore_log_on_restart"]?.GetValue()?.ContainsIgnoreCase("true") ?? false;
+            => this.TaskItem["ignore_log_on_restart"]?.GetValue()?.ContainsIgnoreCase("true") ?? false;
 
 
 
@@ -181,9 +181,11 @@ namespace Com.H.Threading.Scheduler
             get
             {
                 var item = this.TaskItem["now"]?.GetValue();
-                if (item == null) return DateTime.Now;
-                if (DateTime.TryParse(item, out DateTime dateTime)) return dateTime;
-                return DateTime.Now;
+                if (item is null
+                    ||
+                    !DateTime.TryParse(item, out DateTime dateTime)
+                    ) return DateTime.Now;
+                return dateTime;
             }
         }
 
