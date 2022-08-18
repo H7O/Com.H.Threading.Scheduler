@@ -162,7 +162,6 @@ namespace Com.H.Threading.Scheduler
 
         private ValueProcessorItem GetValueProcessorItem()
         {
-            this.Vars = null;
             return
             Enumerable.Aggregate(
                  this.AllTasks?.ValueProcessors?
