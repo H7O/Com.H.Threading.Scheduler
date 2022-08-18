@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Com.H.Threading.Scheduler</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <ApplicationIcon>128x128.ico</ApplicationIcon>
+    <GenerateDocumentationFile>False</GenerateDocumentationFile>
+    <SignAssembly>False</SignAssembly>
+    <Version>6.0.6.1</Version>
+    <Authors>Hussein Al Bayati</Authors>
+    <Description>An easy to use, simple yet feature-rich open-source framework for writing middlewares in the form of a low resource footnote Windows services, Linux Daemons or as micro-service.
+Takes care of multi-threaded service granular scheduling, shutdowns, restarts, error recovery.</Description>
+    <Copyright>Hussein Al Bayati</Copyright>
+    <PackageProjectUrl>https://github.com/H7O/Com.H.Threading.Scheduler</PackageProjectUrl>
+    <PackageIcon>128x128.jpg</PackageIcon>
+    <PackageReadmeFile>nuget.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/H7O/Com.H.Threading.Scheduler</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>Multi-threading,Concurrency,Windows Service,Linux Daemon</PackageTags>
+    <PackageReleaseNotes>Initial release</PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="128x128.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\128x128.jpg">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\nuget.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Com.H" Version="6.0.2.3" />
+  </ItemGroup>
+
+</Project>
