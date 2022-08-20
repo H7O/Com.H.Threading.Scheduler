@@ -17,14 +17,38 @@ namespace Com.H.Threading.Scheduler
     public class XmlHTaskItem : IHTaskItem, IDisposable
     {
         #region properties
-        // public string? XmlFileFullPath { get; set; }
+        //public string XmlFileFullPath { get; set; }
         public string UniqueKey { get; init; }
         private XElement? Element { get; init; }
         public string RawValue { get; init; }
         public ContentSettings ContentSettings { get; init; }
         private CancellationTokenSource? Cts { get; set; }
         private bool disposedValue;
-        public DefaultVars Vars { get; init; }
+        private DefaultVars? vars = null;
+        public DefaultVars Vars
+        {
+            get
+            {
+                if (this.Parent?.Vars is not null) return this.Parent.Vars;
+                if (vars is not null) return vars;
+                this.vars = new DefaultVars()
+                {
+                    Now = this.Schedule?.Now
+                        // ?? this.Parent?.Vars?.Now
+                        ?? DateTime.Now,
+                    Tomorrow = this.Schedule?.Tomorrow
+                        // ?? this.Parent?.Vars?.Tomorrow
+                        ?? DateTime.Today.AddDays(1),
+                };
+                return vars;
+            }
+            set
+            {
+                // Console.WriteLine($"before resetting is value null = ${value is null}");
+                this.vars = value;
+                // Console.WriteLine($"after resetting is value null = ${value is null}");
+            }
+        }
         public string Name { get; init; }
         public string FullName { get; init; }
         public IHTaskItem? Parent { get; init; }
@@ -40,13 +64,13 @@ namespace Com.H.Threading.Scheduler
         public IHTaskItem? this[string name] { get => GetItem(name); }
         #endregion
 
-        //private IHTaskItem? GetDirectChild(string name)
+        //private IHTaskItem GetDirectChild(string name)
         //{
         //    if (this.Children == null
         //        || string.IsNullOrWhiteSpace(name)) return null;
 
         //    return this.Children.FirstOrDefault(x =>
-        //        x?.Name != null
+        //        x.Name != null
         //        && x.Name.ToUpper(CultureInfo.InvariantCulture)
         //        .Equals(name.ToUpper(CultureInfo.InvariantCulture)));
         //}
@@ -73,16 +97,6 @@ namespace Com.H.Threading.Scheduler
                     schedulerItem = new XmlHTaskItem(this.AllTasks,
                     this.Element?.Element("sys"), this, this.Cts?.Token));
 
-            this.Vars = new DefaultVars()
-            {
-                Now = this.Schedule?.Now
-                    ?? this.Parent?.Vars?.Now
-                    ?? DateTime.Now,
-                Tomorrow = this.Schedule?.Tomorrow
-                    ?? this.Parent?.Vars?.Tomorrow
-                    ?? DateTime.Today.AddDays(1),
-            };
-
 
             this.Children = this.Element?.Elements()?
                 .Where(x => !x.Name.LocalName.Equals("sys"))?
@@ -104,16 +118,13 @@ namespace Com.H.Threading.Scheduler
             =>
             ((IHTaskItem)this).FindDescendant(index, (item, name) =>
                 item?.Children?.FirstOrDefault(x => x?.Name?.EqualsIgnoreCase(name) == true)
-                ,new string[] { "/", ":", "->", ">", "=>" });
-        // , (item, name) => item?.Name?.EqualsIgnoreCase(name) == true);
-
+                , new string[] { "/", ":", "->", ">", "=>" });
         public IEnumerable<IHTaskItem?>? GetItems(string index)
             =>
             ((IHTaskItem)this).FindDescendants(index, (item, name) =>
                 item?.Children?.Where(x => x?.Name?.EqualsIgnoreCase(name) == true),
                 new string[] { "/", ":", "->", ">", "=>" });
-                    // , (item, name) => item?.Name?.EqualsIgnoreCase(name) == true);
-
+        // , (item, name) => item?.Name?.EqualsIgnoreCase(name) == true);
 
         public IEnumerable<string?>? GetValues(string index)
         => this.GetItems(index)?.Select(x =>
@@ -139,19 +150,19 @@ namespace Com.H.Threading.Scheduler
 
 
         private ValueProcessorItem? GetValueProcessorItem()
-        =>
-           Enumerable.Aggregate(
-                this.AllTasks?.ValueProcessors?
-               .OrdinalFilter(
-                   this.ContentSettings?.Type?
-                   .Split(new string[] { ",", "=>", "->", ">" },
-                       StringSplitOptions.RemoveEmptyEntries
-                       | StringSplitOptions.TrimEntries) ?? Array.Empty<string>()
+            =>
+            Enumerable.Aggregate(
+                 this.AllTasks?.ValueProcessors?
+                .OrdinalFilter(
+                    this.ContentSettings?.Type?
+                    .Split(new string[] { ",", "=>", "->", ">" },
+                        StringSplitOptions.RemoveEmptyEntries
+                        | StringSplitOptions.TrimEntries) ?? Array.Empty<string>()
                    )
                 ?? Array.Empty<ValueProcessor>()
                 , ValueProcessorItem.Parse(this)
                 .DefaultVarsProcessor().CustomVarsProcessor()
-                , (i, n) => n == null?null:n(i, this.Cts?.Token)
+                , (i, n) => n == null ? null : n(i, this.Cts?.Token)
                 .DefaultVarsProcessor().CustomVarsProcessor()
                 );
 
@@ -166,8 +177,7 @@ namespace Com.H.Threading.Scheduler
                 }
                 if (this.ContentSettings.CachePeriod == ContentCachePeriod.None)
                     return GetContent();
-                if (this.Cache == null)
-                    this.Cache = new CachedRunDeprecated();
+                this.Cache ??= new CachedRunDeprecated();
                 return this.ContentSettings.CachePeriod ==
                     ContentCachePeriod.Miliseconds ?
                     this.Cache.Run(GetContent,
@@ -193,12 +203,11 @@ namespace Com.H.Threading.Scheduler
                 }
                 if (this.ContentSettings.CachePeriod == ContentCachePeriod.None)
                     return GetContent();
-                if (this.Cache == null)
-                    this.Cache = new CachedRunDeprecated();
+                this.Cache ??= new CachedRunDeprecated();
                 return this.ContentSettings.CachePeriod ==
                     ContentCachePeriod.Miliseconds ?
                     this.Cache.Run(GetContent,
-                        TimeSpan.FromMilliseconds((int)(this.ContentSettings.CacheInMilisec??0)),
+                        TimeSpan.FromMilliseconds((int)(this.ContentSettings.CacheInMilisec ?? 0)),
                             this.FullName)
                     : this.Cache.Run(GetContent,
                         DateTime.Today.AddDays(1), this.FullName);

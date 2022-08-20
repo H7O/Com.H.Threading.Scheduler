@@ -86,7 +86,7 @@ namespace Com.H.Threading.Scheduler.VP
 
         public static ValueProcessorItem? DefaultVarsProcessor(this ValueProcessorItem? valueItem)
         {
-            if (valueItem is null 
+            if (valueItem is null
                 || string.IsNullOrWhiteSpace(valueItem.Value ??= valueItem?.Item?.RawValue))
                 return valueItem;
             // valueItem is never null
@@ -94,16 +94,16 @@ namespace Com.H.Threading.Scheduler.VP
             valueItem.Value = valueItem?.Value?.FillDate(valueItem.Item?.Vars?.Now, "{now{")
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
                 .FillDate(valueItem?.Item?.Vars?.Tomorrow, "{tomorrow{")
-                .Replace("{dir{sys}}", 
+                .Replace("{dir{sys}}",
                 AppDomain.CurrentDomain.BaseDirectory
                 .TrimEnd(Path.DirectorySeparatorChar)
                 )
-                .Replace("{dir{uri}}",
-                    new Uri(
-                        AppDomain.CurrentDomain.BaseDirectory
-                        .UnifyPathSeperator()
-                        )?
-                        .AbsoluteUri??"");
+                .Replace("{dir{uri}}", 
+                new Uri(
+                    AppDomain.CurrentDomain.BaseDirectory
+                    .UnifyPathSeperator()
+                    )?
+                .AbsoluteUri??"");
             return valueItem;
         }
 
@@ -119,8 +119,8 @@ namespace Com.H.Threading.Scheduler.VP
                 return valueItem;
             var (beginMarker, endMarker, nullValue) = valueItem.GetVarMarkers();
             valueItem.Value = valueItem?.Value?
-                .Fill(valueItem.Item.Vars.Custom, 
-                    beginMarker, 
+                .Fill(valueItem.Item.Vars.Custom,
+                    beginMarker,
                     endMarker,
                     nullValue
                 );
@@ -170,7 +170,7 @@ namespace Com.H.Threading.Scheduler.VP
         public static ValueProcessorItem? JsonDataModelProcessor(
             this ValueProcessorItem? valueItem, CancellationToken? _)
         {
-            if (valueItem is null || 
+            if (valueItem is null ||
                 valueItem?.IsValid("json") == false) return valueItem;
             // valueItem cannot be null
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -195,7 +195,7 @@ namespace Com.H.Threading.Scheduler.VP
             this ValueProcessorItem? valueItem, CancellationToken? _)
         {
             if (
-                valueItem is null || 
+                valueItem is null ||
                 valueItem.IsValid("xml") == false) return valueItem;
             valueItem.Value ??= valueItem?.Item?.RawValue;
             try

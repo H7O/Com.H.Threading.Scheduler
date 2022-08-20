@@ -1,5 +1,4 @@
-﻿using Com.H.Collections.Concurrent;
-using Com.H.IO;
+﻿using Com.H.IO;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -17,7 +16,7 @@ namespace Com.H.Threading.Scheduler
     {
         #region properties
         private string? LogFilePath { get; set; }
-        private ConcurrentDictionary<string, TimeLog> TimeLogs;
+        private ConcurrentDictionary<string, TimeLog> TimeLogs { get; set; }
         private ReaderWriterLockSlim RWLock { get; set; }
         private object SaveLock { get; set; }
 
@@ -62,7 +61,7 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
         #region indexer
-        public TimeLog? this[string key] 
+        public TimeLog? this[string key]
         {
             get
             {
@@ -124,7 +123,7 @@ namespace Com.H.Threading.Scheduler
                             new XElement("key", new XCData(x.Key)),
                             new XElement("last_executed",
                                 new XCData(x.Value?.LastExecuted?.ToString("yyyy-MM-dd HH:mm:ss.fffff",
-                                    CultureInfo.InvariantCulture)??string.Empty)),
+                                    CultureInfo.InvariantCulture) ?? string.Empty)),
                             new XElement("last_error",
                                 new XCData(x.Value?.LastError?.ToString("yyyy-MM-dd HH:mm:ss.fffff",
                                     CultureInfo.InvariantCulture) ?? string.Empty)),
@@ -133,7 +132,7 @@ namespace Com.H.Threading.Scheduler
                                     CultureInfo.InvariantCulture)))
                             )));
             }
-            catch{ throw; }
+            catch { throw; }
             finally
             {
                 this.ExitReadLock();
@@ -156,7 +155,7 @@ namespace Com.H.Threading.Scheduler
             if (string.IsNullOrWhiteSpace(this.LogFilePath)
                 || !File.Exists(this.LogFilePath))
             {
-                
+                this.TimeLogs = new ConcurrentDictionary<string, TimeLog>();
                 return;
             }
             try
@@ -164,7 +163,7 @@ namespace Com.H.Threading.Scheduler
                 this.EnterWriteLock();
                 this.TimeLogs = new ConcurrentDictionary<string, TimeLog>(
                     XElement.Load(this.LogFilePath).Elements()
-                    .Where(e=>
+                    .Where(e =>
                         e is not null
                         &&
                         e.Element("key")?.Value is not null
@@ -194,7 +193,7 @@ namespace Com.H.Threading.Scheduler
                         }
                     ));
             }
-            catch 
+            catch
             {
                 bool cleanedUp = false;
                 try

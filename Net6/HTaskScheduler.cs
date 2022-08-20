@@ -80,23 +80,23 @@ namespace Com.H.Threading.Scheduler
             if (
                 // string.IsNullOrWhiteSpace(this.XmlConfigPath) == false
                 // && 
-                !File.Exists(this.XmlConfigPath)  
+                !File.Exists(this.XmlConfigPath)
                 && !Directory.Exists(this.XmlConfigPath))
             {
                 // if (this.Tasks?.Any() == false)
-                    throw new FileNotFoundException(this.XmlConfigPath);
+                throw new FileNotFoundException(this.XmlConfigPath);
                 // return;
             }
             // if (string.IsNullOrWhiteSpace(this.XmlConfigPath)) return;
             this.Tasks = new XmlFileHTaskCollection(this.XmlConfigPath);
-            
+
             this.TimeLog = new XmlFileHTaskTimeLogger(
                 Path.Combine(
                     Directory.GetParent(this.XmlConfigPath)?.FullName
                     ?? AppDomain.CurrentDomain.BaseDirectory,
                     new FileInfo(this.XmlConfigPath).Name + ".log"));
             foreach (var task in this.Tasks.Where(x => x?.Schedule?.IgnoreLogOnRestart == true
-                && this.TimeLog[x.UniqueKey] != null
+                            && this.TimeLog[x.UniqueKey] != null
                 ))
             {
                 // this.TimeLog[task.UniqueKey] cannot be null here.
@@ -169,7 +169,7 @@ namespace Com.H.Threading.Scheduler
         private void Process(IHTaskItem task)
         {
             if (this.Cts is null) throw new NullReferenceException("Cts is null in HTaskSchedular.Start()");
-            HTaskSchedulerEventArgs? evArgs = new (
+            HTaskSchedulerEventArgs? evArgs = new(
                         this,
                         task,
                         this.Cts.Token
@@ -179,6 +179,8 @@ namespace Com.H.Threading.Scheduler
                 // check if task is eligible to run including retry on error status (if failed to run in an earlier attempt and the schedule
                 // for when to retry and retry max attempts).
 
+                // reset vars for the session
+                task.Vars = null;
 
                 if (!this.IsDue(task)) return;
 
@@ -221,7 +223,7 @@ namespace Com.H.Threading.Scheduler
                         IEnumerable<IHTaskItem> AllChildren(IHTaskItem item)
                         {
                             return (item.Children?
-                                .Where(x=>x is not null)
+                                .Where(x => x is not null)
                                 // x won't be null here
 #pragma warning disable CS8604 // Possible null reference argument.
                                 .SelectMany(x => AllChildren(x)) ??
@@ -306,8 +308,8 @@ namespace Com.H.Threading.Scheduler
 
             #region dates
             if (item.Schedule.Dates != null
-                && 
-                !item.Schedule.Dates.Any(x=>
+                &&
+                !item.Schedule.Dates.Any(x =>
                 timeNow >= x && timeNow < x.Date.AddDays(1))) return false;
 
             #endregion
@@ -392,7 +394,7 @@ namespace Com.H.Threading.Scheduler
         {
 
             if (e is null) return Task.CompletedTask;
-            if (this.Cts is null) 
+            if (this.Cts is null)
                 throw new NullReferenceException("Cts is null in HTaskScheduler.OnTaskIsDueAsync()");
             return Cancellable.CancellableRunAsync(
                 () => TaskIsDue?.Invoke(e.Sender, e)

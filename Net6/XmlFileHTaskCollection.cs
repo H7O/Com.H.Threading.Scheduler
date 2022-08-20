@@ -32,7 +32,7 @@ namespace Com.H.Threading.Scheduler
         /// Allows for adding custom value post processing logic when retrieving configuration values.
         /// Each tag in the configuration file could have the reserved attribute 'content_type' defined with 
         /// a value that if matches a key in this dictionary would instruct the scheduler to 
-        /// lookup the dictionary key corresponding Func, execute it, and returns the resulting value
+        /// lookup the dictionary key corresponding Func, executes it, and returns the resulting value
         /// instead of the actual tag value.
         /// By default, the engine adds UriValueProcessor that correspond to 'content_type' value of 'uri'
         /// </summary>
@@ -89,7 +89,7 @@ namespace Com.H.Threading.Scheduler
                     {
                         if (assemblyType is null) continue;
                         _ = this.ValueProcessors.TryAdd(type,
-                            
+
 #pragma warning disable CS8621 // Nullability of reference types in return type doesn't match the target delegate (possibly because of nullability attributes).
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -130,9 +130,9 @@ namespace Com.H.Threading.Scheduler
                 if (this.Tasks == null) this.Tasks = new List<TasksFileContainer>();
 
                 foreach (var file in currentFiles.Where(x =>
-                 this.TasksLastModified == null
-                 ||
-                 x.LastWriteTime > this.TasksLastModified))
+                this.TasksLastModified == null
+                ||
+                x.LastWriteTime > this.TasksLastModified))
                 {
                     try
                     {
@@ -168,8 +168,7 @@ namespace Com.H.Threading.Scheduler
         #region IEnumerator
         public IEnumerator<IHTaskItem?> GetEnumerator()
         {
-            
-            return this.GetTasks()?.GetEnumerator()?? Enumerable.Empty<IHTaskItem?>().GetEnumerator();
+            return this.GetTasks()?.GetEnumerator() ?? Enumerable.Empty<IHTaskItem?>().GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

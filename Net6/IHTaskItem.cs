@@ -61,7 +61,7 @@ namespace Com.H.Threading.Scheduler
         /// <summary>
         /// DataModel to fill placeholders IHTaskItem values
         /// </summary>
-        DefaultVars Vars { get; }
+        DefaultVars Vars { get; set; }
 
         ContentSettings ContentSettings { get; }
         /// <summary>
