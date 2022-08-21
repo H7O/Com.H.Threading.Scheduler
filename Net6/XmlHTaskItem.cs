@@ -25,7 +25,7 @@ namespace Com.H.Threading.Scheduler
         private CancellationTokenSource? Cts { get; set; }
         private bool disposedValue;
         private DefaultVars? vars = null;
-        public DefaultVars Vars
+        public DefaultVars? Vars
         {
             get
             {

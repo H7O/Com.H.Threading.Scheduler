@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <Version>5.0.17.1</Version>
+    <Version>5.0.17.2</Version>
     <Description>An easy to use, simple yet feature-rich open-source framework for writing middlewares in the form of a low resource footnote Microservices, Windows services and/or Linux Daemons.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/H7O/Com.H.Threading.Scheduler</PackageProjectUrl>
@@ -14,8 +14,8 @@
     <Authors>Hussein Al Bayati</Authors>
     <AnalysisLevel>latest</AnalysisLevel>
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
-    <AssemblyVersion>5.0.17.0</AssemblyVersion>
-    <FileVersion>5.0.17.0</FileVersion>
+    <AssemblyVersion>5.0.17.2</AssemblyVersion>
+    <FileVersion>5.0.17.2</FileVersion>
     <Copyright>Hussein Al Bayati</Copyright>
     <PackageIcon>128x128.jpg</PackageIcon>
     <PackageIconUrl />
@@ -35,7 +35,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Com.H" Version="5.0.13.1" />
+    <PackageReference Include="Com.H" Version="5.0.17.2" />
   </ItemGroup>
 
   <ItemGroup>

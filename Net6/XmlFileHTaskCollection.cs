@@ -12,12 +12,14 @@ using Com.H.IO;
 using Com.H.Text;
 using System.Text.RegularExpressions;
 using System.Reflection;
+using Com.H.Events;
 
 namespace Com.H.Threading.Scheduler
 {
 
     public class XmlFileHTaskCollection : IHTaskCollection
     {
+        public CancellationTokenSource? Cts {get;set;}
         internal class TasksFileContainer
         {
             internal string? FileName { get; set; }
@@ -48,7 +50,7 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
         #region constructor
-        public XmlFileHTaskCollection(string taskCollectionPath)
+        public XmlFileHTaskCollection(string taskCollectionPath, CancellationToken? token)
         {
             if (string.IsNullOrWhiteSpace(taskCollectionPath))
                 throw new ArgumentNullException(nameof(taskCollectionPath));
@@ -56,7 +58,9 @@ namespace Com.H.Threading.Scheduler
             if (!Directory.Exists(this.BasePath)
                 && !File.Exists(this.BasePath))
                 throw new FileNotFoundException(this.BasePath);
-
+            this.Cts = token is null ? 
+                new CancellationTokenSource() : 
+                CancellationTokenSource.CreateLinkedTokenSource((CancellationToken) token);
             this.ValueProcessors = new ConcurrentDictionary<string, ValueProcessor?>();
             AddCustomPlugins();
 
@@ -127,7 +131,7 @@ namespace Com.H.Threading.Scheduler
                         && currentFileCount == this.TasksFileCount
                         )
                     return this.Tasks.Select(x => x.Task).ToList();
-                if (this.Tasks == null) this.Tasks = new List<TasksFileContainer>();
+                this.Tasks ??= new List<TasksFileContainer>();
 
                 foreach (var file in currentFiles.Where(x =>
                 this.TasksLastModified == null
@@ -148,11 +152,8 @@ namespace Com.H.Threading.Scheduler
                     }
                     catch (Exception ex)
                     {
-                        // todo: add error event to be consumed by the scheduler and 
-                        // spit out via scheduler own OnError event.
-                        // This to allow bypassing of erroneous XML configurations instead of
-                        // halting the parsing process
-                        throw new FormatException($"XML format error trying to load {file.FullName}: {ex.Message}");
+                        this.OnErrorAsync(new HErrorEventArgs(this, 
+                            new FormatException($"XML format error trying to load {file.FullName}: {ex.Message}")));
                     }
 
                 }
@@ -192,6 +193,29 @@ namespace Com.H.Threading.Scheduler
 
         bool ICollection<IHTaskItem?>.Remove(IHTaskItem? item)
             => throw new NotImplementedException();
+        #endregion
+
+        #region events
+
+        #region OnError
+
+        
+        /// <summary>
+        /// Gets triggered whenever there is an error that might get supressed if retry on error is enabled
+        /// </summary>
+        public event HErrorEventHandler? Error;
+        protected virtual Task OnErrorAsync(HErrorEventArgs e)
+        {
+            if (e == null) return Task.CompletedTask;
+            if (this.Cts is null)
+                throw new NullReferenceException("Cts is null in XmlFileHTaskCollection.OnErrorAsync()");
+            return Cancellable.CancellableRunAsync(
+                () => Error?.Invoke(e.Sender, e)
+                , this.Cts.Token);
+        }
+
+        #endregion
+
         #endregion
     }
 }

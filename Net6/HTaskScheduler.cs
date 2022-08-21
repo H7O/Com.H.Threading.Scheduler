@@ -15,7 +15,7 @@ namespace Com.H.Threading.Scheduler
     {
         #region properties
         /// <summary>
-        /// The time interval in miliseconds of how often the schedular checks on tasks eligibility to run.
+        /// The time interval in miliseconds of how often the scheduler checks on tasks eligibility to run.
         /// Default value is 1000 miliseconds
         /// </summary>
         public int TickInterval { get; set; }
@@ -33,7 +33,7 @@ namespace Com.H.Threading.Scheduler
         /// Default constructor that uses a local xml config file to load tasks configuration.
         /// For custom configuration from Database, Json files, etc.. implement 
         /// IHTaskCollection and IHTaskTimeLog interfaces and make use of the overloaded constructor
-        /// that accepts those interfaces to integrate your custom config / logging workflow with the schedular
+        /// that accepts those interfaces to integrate your custom config / logging workflow with the scheduler
         /// framework.
         /// </summary>
         /// <param name="xmlConfigPath"></param>
@@ -88,7 +88,8 @@ namespace Com.H.Threading.Scheduler
                 // return;
             }
             // if (string.IsNullOrWhiteSpace(this.XmlConfigPath)) return;
-            this.Tasks = new XmlFileHTaskCollection(this.XmlConfigPath);
+            this.Tasks = new XmlFileHTaskCollection(this.XmlConfigPath, this.Cts?.Token);
+            
 
             this.TimeLog = new XmlFileHTaskTimeLogger(
                 Path.Combine(
@@ -108,6 +109,7 @@ namespace Com.H.Threading.Scheduler
             }
 
         }
+
         #endregion
 
         #region start / stop
@@ -145,7 +147,7 @@ namespace Com.H.Threading.Scheduler
         #region monitor
         private void MonitorTasks()
         {
-            if (this.Cts is null) throw new NullReferenceException("Cts is null in HTaskSchedular.MonitorTasks");
+            if (this.Cts is null) throw new NullReferenceException("Cts is null in HTaskScheduler.MonitorTasks");
             while (this.Cts.IsCancellationRequested == false)
             {
                 if (this.Tasks is not null)
@@ -168,7 +170,7 @@ namespace Com.H.Threading.Scheduler
 
         private void Process(IHTaskItem task)
         {
-            if (this.Cts is null) throw new NullReferenceException("Cts is null in HTaskSchedular.Start()");
+            if (this.Cts is null) throw new NullReferenceException("Cts is null in HTaskScheduler.Start()");
             HTaskSchedulerEventArgs? evArgs = new(
                         this,
                         task,
@@ -231,9 +233,13 @@ namespace Com.H.Threading.Scheduler
                                 Enumerable.Empty<IHTaskItem>()).Append(item);
                         }
                         foreach (var child in AllChildren(task)
+                            .Where(x=>x?.Vars is not null)
                             //.Where(x => x.Vars?.Custom == null)
                             )
+                            // Vars already checked for null
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                             child.Vars.Custom = repeatDataModel;
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                         RunTask();
                     }
                 }
@@ -253,7 +259,7 @@ namespace Com.H.Threading.Scheduler
             {
                 // catch errors within the thread, and check if retry on error is enabled
                 // if enabled, don't throw exception, trigger OnErrorEvent async, then log error retry attempts and last error
-                this.OnErrorAsync(new HTaskSchedularErrorEventArgs(this, ex, evArgs));
+                this.OnErrorAsync(new HTaskSchedulerErrorEventArgs(this, ex, evArgs));
                 if (task?.Schedule?.RetryAttemptsAfterError is null || task.UniqueKey is null) throw;
                 // TimeLog[index] creates an entry on-the-fly for the index if index not found.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -405,12 +411,12 @@ namespace Com.H.Threading.Scheduler
 
         #region OnError
 
-        public delegate void ErrorEventHandler(object sender, HTaskSchedularErrorEventArgs e);
+        public delegate void ErrorEventHandler(object sender, HTaskSchedulerErrorEventArgs e);
         /// <summary>
         /// Gets triggered whenever there is an error that might get supressed if retry on error is enabled
         /// </summary>
         public event ErrorEventHandler? Error;
-        protected virtual Task OnErrorAsync(HTaskSchedularErrorEventArgs e)
+        protected virtual Task OnErrorAsync(HTaskSchedulerErrorEventArgs e)
         {
             if (e == null) return Task.CompletedTask;
             if (this.Cts is null)

@@ -40,7 +40,9 @@ Takes care of multi-threaded service granular scheduling, shutdowns, restarts, e
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Com.H" Version="6.0.2.3" />
+    <Reference Include="Com.H">
+      <HintPath>..\..\Com.H\Net6\bin\Release\net6.0\Com.H.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

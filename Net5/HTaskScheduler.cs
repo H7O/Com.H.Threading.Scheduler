@@ -228,7 +228,7 @@ namespace Com.H.Threading.Scheduler
             {
                 // catch errors within the thread, and check if retry on error is enabled
                 // if enabled, don't throw exception, trigger OnErrorEvent async, then log error retry attempts and last error
-                this.OnErrorAsync(new HTaskSchedularErrorEventArgs(this, ex, evArgs));
+                this.OnErrorAsync(new HTaskSchedulerErrorEventArgs(this, ex, evArgs));
                 if (task.Schedule.RetryAttemptsAfterError == null) throw;
                 this.TimeLog[task.UniqueKey].ErrorCount++;
                 this.TimeLog[task.UniqueKey].LastError = DateTime.Now;
@@ -375,12 +375,12 @@ namespace Com.H.Threading.Scheduler
 
         #region OnError
 
-        public delegate void ErrorEventHandler(object sender, HTaskSchedularErrorEventArgs e);
+        public delegate void ErrorEventHandler(object sender, HTaskSchedulerErrorEventArgs e);
         /// <summary>
         /// Gets triggered whenever there is an error that might get supressed if retry on error is enabled
         /// </summary>
         public event ErrorEventHandler Error;
-        protected virtual Task OnErrorAsync(HTaskSchedularErrorEventArgs e)
+        protected virtual Task OnErrorAsync(HTaskSchedulerErrorEventArgs e)
         {
             if (e == null) return Task.CompletedTask;
             return Cancellable.CancellableRunAsync(

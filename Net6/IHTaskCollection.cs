@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Threading;
 using Com.H.Threading.Scheduler.VP;
+using Com.H.Events;
 
 namespace Com.H.Threading.Scheduler
 {
@@ -13,5 +14,7 @@ namespace Com.H.Threading.Scheduler
     public interface IHTaskCollection : ICollection<IHTaskItem?>
     {
         ConcurrentDictionary<string, ValueProcessor?>? ValueProcessors { get; }
+        event HErrorEventHandler? Error;
     }
+    
 }
