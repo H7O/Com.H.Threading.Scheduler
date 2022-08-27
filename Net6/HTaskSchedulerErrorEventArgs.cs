@@ -4,13 +4,13 @@ using System.Text;
 
 namespace Com.H.Threading.Scheduler
 {
-    public class HTaskSchedulerErrorEventArgs
+    public class HTaskExecutionErrorEventArgs
     {
         public object Sender { get; init; }
         public Exception Exception { get; init; }
-        public HTaskSchedulerEventArgs EventArgs { get; init; }
-        public HTaskSchedulerErrorEventArgs(
-            object sender, Exception exception, HTaskSchedulerEventArgs eventArgs)
+        public HTaskEventArgs EventArgs { get; init; }
+        public HTaskExecutionErrorEventArgs(
+            object sender, Exception exception, HTaskEventArgs eventArgs)
             => (this.Sender, this.Exception, this.EventArgs)
             = (sender, exception, eventArgs);
     }

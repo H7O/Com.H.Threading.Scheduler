@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Com.H.Events;
 using Com.H.IO;
 using Com.H.Linq;
 using Com.H.Text;
@@ -24,6 +25,7 @@ namespace Com.H.Threading.Scheduler
         public IHTaskCollection? Tasks { get; private set; }
         private CancellationTokenSource? Cts { get; set; }
         private AtomicGate RunSwitch { get; set; }
+        private AtomicGate TasksLoadSwitch { get; set; }
         private TrafficController ThreadTraffic { get; set; }
 
         #endregion
@@ -44,9 +46,8 @@ namespace Com.H.Threading.Scheduler
             this.XmlConfigPath = xmlConfigPath;
             this.ThreadTraffic = new TrafficController();
             this.TickInterval = 1000;
-            // this.Load();
             this.RunSwitch = new AtomicGate();
-            this.Load();
+            this.TasksLoadSwitch = new AtomicGate();
         }
 
         /// <summary>
@@ -66,30 +67,26 @@ namespace Com.H.Threading.Scheduler
             this.ThreadTraffic = new TrafficController();
             this.TickInterval = 1000;
             this.RunSwitch = new AtomicGate();
+            this.TasksLoadSwitch = new AtomicGate();
         }
         #endregion
 
         #region load
         private void Load()
         {
-            if (string.IsNullOrWhiteSpace(this.XmlConfigPath)
-                // && (this.Tasks?.Any() == false)
-                ) throw new ArgumentNullException(
-                    "no tasks file or folder path defined");
+            if (!this.TasksLoadSwitch.TryOpen()) return;
 
-            if (
-                // string.IsNullOrWhiteSpace(this.XmlConfigPath) == false
-                // && 
-                !File.Exists(this.XmlConfigPath)
+            if (string.IsNullOrWhiteSpace(this.XmlConfigPath)
+            ) throw new ArgumentNullException(
+                "no tasks file or folder path defined");
+
+            if (!File.Exists(this.XmlConfigPath)
                 && !Directory.Exists(this.XmlConfigPath))
             {
-                // if (this.Tasks?.Any() == false)
                 throw new FileNotFoundException(this.XmlConfigPath);
-                // return;
             }
-            // if (string.IsNullOrWhiteSpace(this.XmlConfigPath)) return;
             this.Tasks = new XmlFileHTaskCollection(this.XmlConfigPath, this.Cts?.Token);
-            
+            this.Tasks.Error += (s, e) => this.OnTaskLoadingErrorAsync(e);
 
             this.TimeLog = new XmlFileHTaskTimeLogger(
                 Path.Combine(
@@ -108,6 +105,7 @@ namespace Com.H.Threading.Scheduler
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
             }
 
+
         }
 
         #endregion
@@ -121,7 +119,7 @@ namespace Com.H.Threading.Scheduler
         public Task Start(CancellationToken? cancellationToken = null)
         {
             if (!this.RunSwitch.TryOpen()) return Task.CompletedTask;
-            //this.Load();
+            this.Load();
             this.Cts = cancellationToken == null
                 ? new CancellationTokenSource()
                 : CancellationTokenSource.CreateLinkedTokenSource(
@@ -171,7 +169,7 @@ namespace Com.H.Threading.Scheduler
         private void Process(IHTaskItem task)
         {
             if (this.Cts is null) throw new NullReferenceException("Cts is null in HTaskScheduler.Start()");
-            HTaskSchedulerEventArgs? evArgs = new(
+            HTaskEventArgs? evArgs = new(
                         this,
                         task,
                         this.Cts.Token
@@ -233,7 +231,7 @@ namespace Com.H.Threading.Scheduler
                                 Enumerable.Empty<IHTaskItem>()).Append(item);
                         }
                         foreach (var child in AllChildren(task)
-                            .Where(x=>x?.Vars is not null)
+                            .Where(x => x?.Vars is not null)
                             //.Where(x => x.Vars?.Custom == null)
                             )
                             // Vars already checked for null
@@ -259,7 +257,7 @@ namespace Com.H.Threading.Scheduler
             {
                 // catch errors within the thread, and check if retry on error is enabled
                 // if enabled, don't throw exception, trigger OnErrorEvent async, then log error retry attempts and last error
-                this.OnErrorAsync(new HTaskSchedulerErrorEventArgs(this, ex, evArgs));
+                this.OnTaskExecutionErrorAsync(new HTaskExecutionErrorEventArgs(this, ex, evArgs));
                 if (task?.Schedule?.RetryAttemptsAfterError is null || task.UniqueKey is null) throw;
                 // TimeLog[index] creates an entry on-the-fly for the index if index not found.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -389,14 +387,14 @@ namespace Com.H.Threading.Scheduler
 
         #region OnTaskIsDue
 
-        public delegate void TaskIsDueEventHandler(object sender, HTaskSchedulerEventArgs e);
+        public delegate void TaskIsDueEventHandler(object sender, HTaskEventArgs e);
 
 
         /// <summary>
         /// Gets triggered whenever a task is due for execution
         /// </summary>
         public event TaskIsDueEventHandler? TaskIsDue;
-        protected virtual Task OnTaskIsDueAsync(HTaskSchedulerEventArgs e)
+        protected virtual Task OnTaskIsDueAsync(HTaskEventArgs e)
         {
 
             if (e is null) return Task.CompletedTask;
@@ -409,20 +407,42 @@ namespace Com.H.Threading.Scheduler
 
         #endregion
 
-        #region OnError
+        #region OnTaskExecutionError
 
-        public delegate void ErrorEventHandler(object sender, HTaskSchedulerErrorEventArgs e);
+        public delegate void TaskExecutionErrorEventHandler(object sender, HTaskExecutionErrorEventArgs e);
         /// <summary>
         /// Gets triggered whenever there is an error that might get supressed if retry on error is enabled
         /// </summary>
-        public event ErrorEventHandler? Error;
-        protected virtual Task OnErrorAsync(HTaskSchedulerErrorEventArgs e)
+        public event TaskExecutionErrorEventHandler? TaskExecutionError;
+        protected virtual Task OnTaskExecutionErrorAsync(HTaskExecutionErrorEventArgs e)
         {
             if (e == null) return Task.CompletedTask;
             if (this.Cts is null)
-                throw new NullReferenceException("Cts is null in HTaskScheduler.OnErrorAsync()");
+                throw new NullReferenceException("Cts is null in HTaskScheduler.OnTaskExecutionErrorAsync()");
             return Cancellable.CancellableRunAsync(
-                () => Error?.Invoke(e.Sender, e)
+                () => TaskExecutionError?.Invoke(e.Sender, e)
+                , this.Cts.Token);
+        }
+
+        #endregion
+
+
+
+
+        #region OnTaskLoadingError
+
+
+        /// <summary>
+        /// Gets triggered whenever there is an error loading tasks.
+        /// </summary>
+        public event HErrorEventHandler? TaskLoadingError;
+        protected virtual Task OnTaskLoadingErrorAsync(HErrorEventArgs e)
+        {
+            if (e == null) return Task.CompletedTask;
+            if (this.Cts is null)
+                throw new NullReferenceException("Cts is null in HTaskScheduler.OnTaskLoadingErrorAsync()");
+            return Cancellable.CancellableRunAsync(
+                () => TaskLoadingError?.Invoke(e.Sender, e)
                 , this.Cts.Token);
         }
 
@@ -448,6 +468,12 @@ namespace Com.H.Threading.Scheduler
                         this.RunSwitch.TryClose();
                     }
                     catch { }
+                    try
+                    {
+                        this.TasksLoadSwitch.TryClose();
+                    }
+                    catch { }
+
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer

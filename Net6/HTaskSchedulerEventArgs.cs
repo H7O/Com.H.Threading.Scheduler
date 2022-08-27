@@ -24,7 +24,7 @@ namespace Com.H.Threading.Scheduler
         public int? PauseBetweenPlays { get; set; }
         public ReplayPlan() => this.Replay = ReplayOption.None;
     }
-    public class HTaskSchedulerEventArgs : EventArgs
+    public class HTaskEventArgs : EventArgs
     {
         #region properties
         public CancellationToken CancellationToken { get; init; }
@@ -63,7 +63,7 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
         #region constructor
-        public HTaskSchedulerEventArgs(
+        public HTaskEventArgs(
             HTaskScheduler scheduler,
             IHTaskItem task,
             CancellationToken cancellationToken
