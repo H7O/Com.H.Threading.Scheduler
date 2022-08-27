@@ -119,7 +119,7 @@ namespace Com.H.Threading.Scheduler
                         && currentFileCount == this.TasksFileCount
                         )
                     return this.Tasks.Select(x => x.Task).ToList();
-                if (this.Tasks == null) this.Tasks = new List<TasksFileContainer>();
+                this.Tasks ??= new List<TasksFileContainer>();
 
                 foreach (var file in currentFiles.Where(x =>
                 this.TasksLastModified == null
