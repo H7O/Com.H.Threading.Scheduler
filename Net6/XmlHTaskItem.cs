@@ -126,6 +126,8 @@ namespace Com.H.Threading.Scheduler
                 new string[] { "/", ":", "->", ">", "=>" });
         // , (item, name) => item?.Name?.EqualsIgnoreCase(name) == true);
 
+        public string? GetValue(string index)
+            => this.GetItem(index)?.GetValue();
         public IEnumerable<string?>? GetValues(string index)
         => this.GetItems(index)?.Select(x =>
         {
@@ -165,7 +167,6 @@ namespace Com.H.Threading.Scheduler
                 , (i, n) => n == null ? null : n(i, this.Cts?.Token)
                 .DefaultVarsProcessor().CustomVarsProcessor()
                 );
-
 
         public string? GetValue()
         {

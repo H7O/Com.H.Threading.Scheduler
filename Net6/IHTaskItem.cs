@@ -75,6 +75,7 @@ namespace Com.H.Threading.Scheduler
         IHTaskItem? GetItem(string index);
         IEnumerable<IHTaskItem?>? GetItems(string index);
         public IEnumerable<string?>? GetValues(string index);
+        public string? GetValue(string index);
         public IEnumerable<dynamic?>? GetModels(string index);
 
 

@@ -9,7 +9,7 @@
     <RepositoryUrl>https://github.com/H7O/Com.H.Threading.Scheduler</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>Multi-threading,Concurrency,Microservices,Windows Service,Linux Daemon</PackageTags>
-    <PackageReleaseNotes>Initial release</PackageReleaseNotes>
+    <PackageReleaseNotes>Maintenance release</PackageReleaseNotes>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <Authors>Hussein Al Bayati</Authors>
     <AnalysisLevel>latest</AnalysisLevel>
