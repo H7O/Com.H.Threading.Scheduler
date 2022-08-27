@@ -11,7 +11,7 @@
     <SignAssembly>False</SignAssembly>
     <Version>6.0.6.1</Version>
     <Authors>Hussein Al Bayati</Authors>
-    <Description>An easy to use, simple yet feature-rich open-source framework for writing middlewares in the form of a low resource footnote Windows services, Linux Daemons or containerized microservices.
+    <Description>An easy to use, simple yet feature-rich open-source framework for writing middlewares in the form of low resource footnote Windows services, Linux Daemons or containerized microservices.
 Takes care of multi-threaded service granular scheduling, shutdowns, restarts, error recovery.</Description>
     <Copyright>Hussein Al Bayati</Copyright>
     <PackageProjectUrl>https://github.com/H7O/Com.H.Threading.Scheduler</PackageProjectUrl>
