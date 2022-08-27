@@ -22,6 +22,8 @@ Takes care of multi-threaded service granular scheduling, shutdowns, restarts, e
     <PackageTags>Multi-threading,Concurrency,Windows Service,Linux Daemon, Microservices</PackageTags>
     <PackageReleaseNotes>Initial release</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Title></Title>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>
