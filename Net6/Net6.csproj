@@ -20,7 +20,7 @@ Takes care of multi-threaded service granular scheduling, shutdowns, restarts, e
     <RepositoryUrl>https://github.com/H7O/Com.H.Threading.Scheduler</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>Multi-threading,Concurrency,Windows Service,Linux Daemon, Microservices</PackageTags>
-    <PackageReleaseNotes>Initial release</PackageReleaseNotes>
+    <PackageReleaseNotes>Maintenance release</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Title></Title>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
