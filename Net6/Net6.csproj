@@ -9,7 +9,7 @@
     <ApplicationIcon>128x128.ico</ApplicationIcon>
     <GenerateDocumentationFile>False</GenerateDocumentationFile>
     <SignAssembly>False</SignAssembly>
-    <Version>6.0.6.3</Version>
+    <Version>6.0.6.4</Version>
     <Authors>Hussein Al Bayati</Authors>
     <Description>An easy to use, simple yet feature-rich open-source framework for writing middlewares in the form of low resource footnote Windows services, Linux Daemons or containerized microservices.
 Takes care of multi-threaded service granular scheduling, shutdowns, restarts, error recovery.</Description>
@@ -42,7 +42,7 @@ Takes care of multi-threaded service granular scheduling, shutdowns, restarts, e
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Com.H" Version="6.0.2.4" />
+    <PackageReference Include="Com.H" Version="6.0.2.5" />
   </ItemGroup>
 
 </Project>
