@@ -47,6 +47,10 @@ namespace Com.H.Threading.Scheduler.VP
 
     public static class DefaultValueProcessors
     {
+        public static void Debug()
+        {
+            Console.WriteLine("debug");
+        }
         public static bool IsValid(
             this ValueProcessorItem valueItem,
             string contentType)
@@ -93,17 +97,26 @@ namespace Com.H.Threading.Scheduler.VP
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
             valueItem.Value = valueItem?.Value?.FillDate(valueItem.Item?.Vars?.Now, "{now{")
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
-                .FillDate(valueItem?.Item?.Vars?.Tomorrow, "{tomorrow{")
-                .Replace("{dir{sys}}",
-                AppDomain.CurrentDomain.BaseDirectory
-                .TrimEnd(Path.DirectorySeparatorChar)
-                )
-                .Replace("{dir{uri}}", 
-                new Uri(
-                    AppDomain.CurrentDomain.BaseDirectory
-                    .UnifyPathSeperator()
-                    )?
-                .AbsoluteUri??"");
+                .FillDate(valueItem?.Item?.Vars?.Tomorrow, "{tomorrow{");
+
+            if (valueItem?.Value?.Contains("{dir{sys}}") == true)
+            {
+                var sysDirUri =
+                        AppDomain.CurrentDomain.BaseDirectory
+                        .TrimEnd(Path.DirectorySeparatorChar);
+                valueItem.Value = valueItem.Value.Replace("{dir{sys}}", sysDirUri);
+            }
+
+            if (valueItem?.Value?.Contains("{dir{uri}}") == true)
+            {
+                var currentDirUri =
+                    new Uri(
+                        AppDomain.CurrentDomain.BaseDirectory
+                        .TrimEnd(Path.DirectorySeparatorChar)
+                        .UnifyPathSeperator())?.AbsoluteUri??"";
+
+                valueItem.Value = valueItem.Value.Replace("{dir{uri}}", currentDirUri);
+            }
             return valueItem;
         }
 

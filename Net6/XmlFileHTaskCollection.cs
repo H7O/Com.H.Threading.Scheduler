@@ -19,7 +19,7 @@ namespace Com.H.Threading.Scheduler
 
     public class XmlFileHTaskCollection : IHTaskCollection
     {
-        public CancellationTokenSource? Cts {get;set;}
+        public CancellationTokenSource? Cts { get; set; }
         internal class TasksFileContainer
         {
             internal string? FileName { get; set; }
@@ -44,7 +44,7 @@ namespace Com.H.Threading.Scheduler
         private string BasePath { get; set; }
         private object TaskLock { get; set; } = new object();
 
-        int ICollection<IHTaskItem?>.Count => this.Tasks?.Count??0;
+        int ICollection<IHTaskItem?>.Count => this.Tasks?.Count ?? 0;
 
         bool ICollection<IHTaskItem?>.IsReadOnly => true;
         #endregion
@@ -58,9 +58,9 @@ namespace Com.H.Threading.Scheduler
             if (!Directory.Exists(this.BasePath)
                 && !File.Exists(this.BasePath))
                 throw new FileNotFoundException(this.BasePath);
-            this.Cts = token is null ? 
-                new CancellationTokenSource() : 
-                CancellationTokenSource.CreateLinkedTokenSource((CancellationToken) token);
+            this.Cts = token is null ?
+                new CancellationTokenSource() :
+                CancellationTokenSource.CreateLinkedTokenSource((CancellationToken)token);
             this.ValueProcessors = new ConcurrentDictionary<string, ValueProcessor?>();
             AddCustomPlugins();
 
@@ -117,50 +117,57 @@ namespace Com.H.Threading.Scheduler
                 && !Directory.Exists(this.BasePath)
                 )
                 throw new FileNotFoundException(this.BasePath);
-            var currentFiles = this.BasePath.ListFiles(true, @".*\.xml$");
-            var currentDate = currentFiles.Select(x => x.LastWriteTime).Max();
-
-            var currentFileCount = currentFiles.Count();
+            var currentFiles = this.BasePath.ListFiles(true, @".*\.xml$").ToList();
+            var currentDate = currentFiles.Max(x => x?.LastWriteTime);
+            var currentFileCount = currentFiles.Count;
 
             lock (this.TaskLock)
             {
-                if (this.Tasks != null
+                this.Tasks ??= new List<TasksFileContainer>();
+                if ((this.Tasks.Count > 0 
                         && this.TasksLastModified != null
                         && this.TasksFileCount != null
                         && currentDate <= this.TasksLastModified
-                        && currentFileCount == this.TasksFileCount
+                        && currentFileCount == this.TasksFileCount)
+                        ||
+                        (
+                            currentFileCount < 1 && this.Tasks.Count<1
                         )
-                    return this.Tasks.Select(x => x.Task).ToList();
-                this.Tasks ??= new List<TasksFileContainer>();
+                    ) return this.Tasks.Select(x => x.Task).ToList();
 
-                foreach (var file in currentFiles.Where(x =>
-                this.TasksLastModified == null
-                ||
-                x.LastWriteTime > this.TasksLastModified))
-                {
-                    try
-                    {
-                        var tasksToAdd = XElement.Load(file.FullName)
-                                .Elements().Select(x =>
-                                new TasksFileContainer()
-                                {
-                                    Task = new XmlHTaskItem(this, x) { FullName = file.FullName },
-                                    FileName = file.FullName
-                                });
-                        this.Tasks.RemoveAll(x => x.FileName.EqualsIgnoreCase(file.FullName));
-                        this.Tasks.AddRange(tasksToAdd);
-                    }
-                    catch (Exception ex)
-                    {
-                        this.OnErrorAsync(new HErrorEventArgs(this, 
-                            new FormatException($"XML format error trying to load {file.FullName}: {ex.Message}")));
-                    }
 
-                }
+                if (currentFiles.Count < 1)
+                    this.Tasks.Clear();
+                else
+                    foreach (var file in currentFiles.Where(x =>
+                    this.TasksLastModified == null
+                    ||
+                    x.LastWriteTime > this.TasksLastModified))
+                    {
+                        try
+                        {
+                            var tasksToAdd = XElement.Load(file.FullName)
+                                    .Elements().Select(x =>
+                                    new TasksFileContainer()
+                                    {
+                                        Task = new XmlHTaskItem(this, x) { FullName = file.FullName },
+                                        FileName = file.FullName
+                                    });
+                            this.Tasks.RemoveAll(x => x.FileName.EqualsIgnoreCase(file.FullName));
+                            this.Tasks.AddRange(tasksToAdd);
+                        }
+                        catch (Exception ex)
+                        {
+                            this.OnErrorAsync(new HErrorEventArgs(this,
+                                new FormatException($"XML format error trying to load {file.FullName}: {ex.Message}")));
+                        }
+
+                    }
 
                 this.TasksLastModified = currentDate;
-                this.TasksFileCount = currentFileCount;
-                return this.Tasks.Select(x => x.Task).ToList();
+                this.TasksFileCount = this.Tasks.Count;
+                
+                return this.Tasks.Select(x=>x.Task).ToList();
             } // lock end
         }
 
@@ -199,7 +206,7 @@ namespace Com.H.Threading.Scheduler
 
         #region OnError
 
-        
+
         /// <summary>
         /// Gets triggered whenever there is an error that might get supressed if retry on error is enabled
         /// </summary>
