@@ -203,6 +203,9 @@ namespace Com.H.Threading.Scheduler
                     this.OnTaskIsDueAsync(evArgs)
                         .GetAwaiter().GetResult();
                 }
+                int repeatCount = 0;
+                int repeatSuccess = 0;
+                int repeatFailure = 0;
 
                 if (task.Schedule?.Repeat is not null)
                 {
@@ -214,7 +217,8 @@ namespace Com.H.Threading.Scheduler
                             && !delaySwitch.TryOpen())
                         {
                             if (this.Cts?.Token is not null)
-                                Task.Delay((int)task.Schedule.RepeatDelayInterval, (CancellationToken)this.Cts.Token)
+                                Task.Delay((int)task.Schedule.RepeatDelayInterval, 
+                                    (CancellationToken)this.Cts.Token)
                                     .GetAwaiter().GetResult();
                             else Task.Delay((int)task.Schedule.RepeatDelayInterval)
                                     .GetAwaiter().GetResult();
