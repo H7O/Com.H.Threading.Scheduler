@@ -60,6 +60,7 @@ namespace Com.H.Threading.Scheduler
         }
         #endregion
 
+
         #region indexer
         public TimeLog? this[string key]
         {
@@ -180,7 +181,7 @@ namespace Com.H.Threading.Scheduler
                             if (DateTime.TryParseExact(
                                 value.Element("last_executed")?.Value, "yyyy-MM-dd HH:mm:ss.fffff",
                                 CultureInfo.InvariantCulture, DateTimeStyles.None, out var lastExecuted))
-                                timeLog.LastError = lastExecuted;
+                                timeLog.LastExecuted = lastExecuted;
 
                             if (DateTime.TryParseExact(
                                 value.Element("last_error")?.Value, "yyyy-MM-dd HH:mm:ss.fffff",
@@ -192,6 +193,7 @@ namespace Com.H.Threading.Scheduler
                             return timeLog;
                         }
                     ));
+                        
             }
             catch
             {
