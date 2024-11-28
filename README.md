@@ -82,7 +82,7 @@ What's left is writing our desired code that we want to get called by the engine
 using System.Threading.Tasks;
 using Com.H.Threading.Scheduler;
 
-namespace Com.H.Threading.Scheduler_Samples
+namespace SchedulerExample
 {
     internal class Program
     {

@@ -63,7 +63,7 @@ Next, write the code to handle the task:
 using System.Threading.Tasks;
 using Com.H.Threading.Scheduler;
 
-namespace Com.H.Threading.Scheduler_Samples
+namespace SchedulerExample
 {
     internal class Program
     {
