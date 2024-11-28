@@ -87,7 +87,7 @@ namespace Com.H.Threading.Scheduler
             var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
                 .Select(x => Path.GetFileName(x.Location));
 
-            foreach (string file in Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory,
+            foreach (string file in Directory.GetFiles(AppContext.BaseDirectory,
                 "Com.H.Threading.Scheduler.VP.*.dll")
                 .Except(loadedAssemblies)
                 )
