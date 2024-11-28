@@ -13,6 +13,7 @@ using Com.H.Text;
 using System.Text.RegularExpressions;
 using System.Reflection;
 using Com.H.Events;
+using Com.H.Threading;
 
 namespace Com.H.Threading.Scheduler
 {
@@ -73,6 +74,8 @@ namespace Com.H.Threading.Scheduler
             this.ValueProcessors = new ConcurrentDictionary<string, ValueProcessor?>();
             AddCustomPlugins();
 
+            // Initialize the Error event with an empty delegate to avoid null reference
+            this.Error += (sender, args, token) => Task.CompletedTask;
             // default processors cannot be null
 #pragma warning disable CS8621 // Nullability of reference types in return type doesn't match the target delegate (possibly because of nullability attributes).
             _ = this.ValueProcessors.TryAdd("uri", DefaultValueProcessors.UriProcessor);
@@ -167,8 +170,9 @@ namespace Com.H.Threading.Scheduler
                         }
                         catch (Exception ex)
                         {
-                            this.OnErrorAsync(new HErrorEventArgs(this,
-                                new FormatException($"XML format error trying to load {file.FullName}: {ex.Message}")));
+                            this.RaiseErrorAsync(new HErrorEventArgs(this,
+                                new FormatException($"XML format error trying to load {file.FullName}: {ex.Message}")))
+                                .GetAwaiter().GetResult();
                         }
 
                     }
@@ -219,15 +223,20 @@ namespace Com.H.Threading.Scheduler
         /// <summary>
         /// Gets triggered whenever there is an error that might get supressed if retry on error is enabled
         /// </summary>
-        public event HErrorEventHandler? Error;
-        protected virtual Task OnErrorAsync(HErrorEventArgs e)
+        public event AsyncEventHandler<HErrorEventArgs> Error;
+        protected async Task RaiseErrorAsync(HErrorEventArgs e)
         {
-            if (e == null) return Task.CompletedTask;
+            if (e is null || Error is null) return;
             if (this.Cts is null)
-                throw new NullReferenceException("Cts is null in XmlFileHTaskCollection.OnErrorAsync()");
-            return Cancellable.CancellableRunAsync(
-                () => Error?.Invoke(e.Sender, e)
-                , this.Cts.Token);
+                throw new NullReferenceException("Cts is null in XmlFileHTaskCollection.RaiseErrorAsync()");
+
+            if (this.Cts.Token.IsCancellationRequested) return;
+
+            await Task.WhenAll(Error.GetInvocationList()
+                .Cast<AsyncEventHandler<HErrorEventArgs>>()
+                .Select(handler =>
+                    handler(e.Sender, e, this.Cts.Token)
+                ));
         }
 
 

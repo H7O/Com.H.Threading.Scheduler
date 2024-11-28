@@ -102,7 +102,7 @@ namespace Com.H.Threading.Scheduler.VP
             if (valueItem?.Value?.Contains("{dir{sys}}") == true)
             {
                 var sysDirUri =
-                        AppDomain.CurrentDomain.BaseDirectory
+                        AppContext.BaseDirectory
                         .TrimEnd(Path.DirectorySeparatorChar);
                 valueItem.Value = valueItem.Value.Replace("{dir{sys}}", sysDirUri);
             }
@@ -111,7 +111,7 @@ namespace Com.H.Threading.Scheduler.VP
             {
                 var currentDirUri =
                     new Uri(
-                        AppDomain.CurrentDomain.BaseDirectory
+                        AppContext.BaseDirectory
                         .TrimEnd(Path.DirectorySeparatorChar)
                         .UnifyPathSeperator())?.AbsoluteUri??"";
 

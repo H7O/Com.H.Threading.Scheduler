@@ -14,7 +14,7 @@ namespace Com.H.Threading.Scheduler
     public interface IHTaskCollection : ICollection<IHTaskItem?>
     {
         ConcurrentDictionary<string, ValueProcessor?>? ValueProcessors { get; }
-        event HErrorEventHandler? Error;
+        event AsyncEventHandler<HErrorEventArgs> Error;
     }
     
 }

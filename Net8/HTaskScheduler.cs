@@ -86,12 +86,12 @@ namespace Com.H.Threading.Scheduler
                 throw new FileNotFoundException(this.XmlConfigPath);
             }
             this.Tasks = new XmlFileHTaskCollection(this.XmlConfigPath, this.Cts?.Token);
-            this.Tasks.Error += (s, e) => this.OnTaskLoadingErrorAsync(e);
+            this.Tasks.Error += (s, e, c) => this.RaiseTaskLoadingErrorAsync(e);
 
             this.TimeLog = new XmlFileHTaskTimeLogger(
                 Path.Combine(
                     Directory.GetParent(this.XmlConfigPath)?.FullName
-                    ?? AppDomain.CurrentDomain.BaseDirectory,
+                    ?? AppContext.BaseDirectory, // AppDomain.CurrentDomain.BaseDirectory,
                     new FileInfo(this.XmlConfigPath).Name + ".log"));
             foreach (var task in this.Tasks.Where(x => x?.Schedule?.IgnoreLogOnRestart == true
                             && this.TimeLog[x.UniqueKey] != null
@@ -110,22 +110,47 @@ namespace Com.H.Threading.Scheduler
 
         #endregion
 
+
+
+        
+
+
         #region start / stop
         /// <summary>
         /// Start monitoring scheduled tasks in order to trigger IsTaskDue event when tasks are ready for execution.
         /// </summary>
         /// <param name="cancellationToken">If provided, the monitoring force stops all running tasks</param>
         /// <returns>a running monitoring task</returns>
-        public Task Start(CancellationToken? cancellationToken = null)
+        public void Start(CancellationToken? cancellationToken = null)
         {
-            if (!this.RunSwitch.TryOpen()) return Task.CompletedTask;
+            _ = StartAsync(cancellationToken);
+        }
+
+
+        /// <summary>
+        /// Start monitoring scheduled tasks in order to trigger IsTaskDue event when tasks are ready for execution.
+        /// </summary>
+        /// <param name="cancellationToken">If provided, the monitoring force stops all running tasks</param>
+        /// <returns>a running monitoring task</returns>
+        public async Task StartAsync(CancellationToken? cancellationToken = null)
+        {
+            if (!this.RunSwitch.TryOpen()) return; // Task.CompletedTask;
             this.Load();
             this.Cts = cancellationToken == null
                 ? new CancellationTokenSource()
                 : CancellationTokenSource.CreateLinkedTokenSource(
                     (CancellationToken)cancellationToken);
-            return Cancellable.CancellableRunAsync(MonitorTasks, this.Cts.Token);
+            try
+            {
+                await MonitorTasks();
+            }
+            catch (OperationCanceledException)
+            {
+            }
+
         }
+
+
         /// <summary>
         /// Stops monitoring tasks schedule, and terminates running tasks.
         /// </summary>
@@ -143,30 +168,50 @@ namespace Com.H.Threading.Scheduler
         #endregion
 
         #region monitor
-        private void MonitorTasks()
+        private async Task MonitorTasks()
         {
-            if (this.Cts is null) throw new NullReferenceException("Cts is null in HTaskScheduler.MonitorTasks");
+            if (this.Cts is null) 
+                throw new NullReferenceException("Cts is null in HTaskScheduler.MonitorTasks");
+            ParallelOptions options = new()
+            {
+                CancellationToken = this.Cts.Token // ,
+                                                   // MaxDegreeOfParallelism = Environment.ProcessorCount
+            };
+
             while (this.Cts.IsCancellationRequested == false)
             {
                 if (this.Tasks is not null)
                 {
-                    foreach (var task in this.Tasks)
+                    _ = Parallel.ForEachAsync(this.Tasks, options, async (task, cToken) =>
                     {
-                        if (task is null) continue;
-                        Cancellable.CancellableRunAsync(() =>
+                        if (task is null || this.Cts.IsCancellationRequested) return;
+                        await this.ThreadTraffic.QueueCallAsync(async () =>
                         {
-                            this.ThreadTraffic.QueueCall(() =>
-                            {
-                                Process(task);
-                            }, 0, task.UniqueKey);
-                        }, this.Cts.Token);
-                    }
-                    Task.Delay(this.TickInterval, this.Cts.Token).GetAwaiter().GetResult();
+                            await Process(task);
+                        }, 0, task.UniqueKey);
+                    });
                 }
+
+                    //await Parallel.ForEachAsync(
+                    //    this.Tasks, options, async (task, cToken)  =>
+                    //{
+                    //    if (task is null) return;
+                    //    await Cancellable.CancellableRunAsync(() =>
+                    //    {
+                    //        _ = this.ThreadTraffic.QueueCallAsync(async () =>
+                    //        {
+                    //            await Process(task);
+                    //        }, 0, task.UniqueKey);
+                    //    }, cToken);
+                    //});
+                
+                await Task.Delay(this.TickInterval, this.Cts.Token);
             }
         }
 
-        private void Process(IHTaskItem task)
+
+
+        private async Task Process(IHTaskItem task)
         {
             if (this.Cts is null) throw new NullReferenceException("Cts is null in HTaskScheduler.Start()");
             HTaskEventArgs? evArgs = new(
@@ -185,25 +230,6 @@ namespace Com.H.Threading.Scheduler
                 if (!this.IsDue(task)) return;
 
 
-                void RunTask()
-                {
-
-                    if (this.Cts?.IsCancellationRequested is true) return;
-
-                    // todo: threaded having continuewith to check
-                    // run status
-
-                    //evArgs = new HTaskSchedulerEventArgs(
-                    //    this,
-                    //    task,
-                    //    this.Cts?.Token
-                    //    );
-
-                    // if eligible to run (and has no previous error logged), trigger synchronous event
-                    this.OnTaskIsDueAsync(evArgs)
-                        .GetAwaiter().GetResult();
-                }
-
                 if (task.Schedule?.Repeat is not null)
                 {
                     var delaySwitch = new AtomicGate();
@@ -214,13 +240,12 @@ namespace Com.H.Threading.Scheduler
                             && !delaySwitch.TryOpen())
                         {
                             if (this.Cts?.Token is not null)
-                                Task.Delay((int)task.Schedule.RepeatDelayInterval, (CancellationToken)this.Cts.Token)
-                                    .GetAwaiter().GetResult();
-                            else Task.Delay((int)task.Schedule.RepeatDelayInterval)
-                                    .GetAwaiter().GetResult();
+                                await Task.Delay((int)task.Schedule.RepeatDelayInterval, (CancellationToken)this.Cts.Token);
+                            else await Task.Delay((int)task.Schedule.RepeatDelayInterval);
                         }
                         if (this.Cts?.IsCancellationRequested == true) return;
-                        IEnumerable<IHTaskItem> AllChildren(IHTaskItem item)
+
+                        static IEnumerable<IHTaskItem> AllChildren(IHTaskItem item)
                         {
                             return (item.Children?
                                 .Where(x => x is not null)
@@ -228,7 +253,8 @@ namespace Com.H.Threading.Scheduler
 #pragma warning disable CS8604 // Possible null reference argument.
                                 .SelectMany(x => AllChildren(x)) ??
 #pragma warning restore CS8604 // Possible null reference argument.
-                                Enumerable.Empty<IHTaskItem>()).Append(item);
+                                // Enumerable.Empty<IHTaskItem>()).Append(item);
+                                []).Append(item);
                         }
                         foreach (var child in AllChildren(task)
                             .Where(x => x?.Vars is not null)
@@ -238,12 +264,17 @@ namespace Com.H.Threading.Scheduler
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
                             child.Vars.Custom = repeatDataModel;
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
-                        RunTask();
+                        if (this.Cts?.IsCancellationRequested is true) return;
+                        await this.RaiseTaskIsDueAsync(evArgs);
                     }
                 }
-                else RunTask();
+                else
+                {
+                    if (this.Cts?.IsCancellationRequested is true) return;
+                    await this.RaiseTaskIsDueAsync(evArgs);
+                }
 
-                // log successful run, and reset retry on error logic in case it was previously set.
+                    // log successful run, and reset retry on error logic in case it was previously set.
                 if (task.UniqueKey is null) throw new InvalidOperationException("task.UniqueKey is not set");
                 // TimeLog[index] creates an entry on-the-fly for the index if index not found.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -257,7 +288,7 @@ namespace Com.H.Threading.Scheduler
             {
                 // catch errors within the thread, and check if retry on error is enabled
                 // if enabled, don't throw exception, trigger OnErrorEvent async, then log error retry attempts and last error
-                this.OnTaskExecutionErrorAsync(new HTaskExecutionErrorEventArgs(this, ex, evArgs));
+                await this.RaiseTaskExecutionErrorAsync(new HTaskExecutionErrorEventArgs(this, ex, evArgs));
                 if (task?.Schedule?.RetryAttemptsAfterError is null || task.UniqueKey is null) throw;
                 // TimeLog[index] creates an entry on-the-fly for the index if index not found.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -268,6 +299,7 @@ namespace Com.H.Threading.Scheduler
             }
 
         }
+
 
         #region is due
         private bool IsDue(IHTaskItem item)
@@ -384,44 +416,61 @@ namespace Com.H.Threading.Scheduler
 
         #endregion
         #region events
+        
 
         #region OnTaskIsDue
-
-        public delegate void TaskIsDueEventHandler(object sender, HTaskEventArgs e);
-
 
         /// <summary>
         /// Gets triggered whenever a task is due for execution
         /// </summary>
-        public event TaskIsDueEventHandler? TaskIsDue;
-        protected virtual Task OnTaskIsDueAsync(HTaskEventArgs e)
+        public event AsyncEventHandler<HTaskEventArgs> TaskIsDue;
+        protected async Task RaiseTaskIsDueAsync(HTaskEventArgs e)
         {
 
-            if (e is null) return Task.CompletedTask;
+            if (e is null || TaskIsDue is null) return; // Task.CompletedTask;
             if (this.Cts is null)
-                throw new NullReferenceException("Cts is null in HTaskScheduler.OnTaskIsDueAsync()");
-            return Cancellable.CancellableRunAsync(
-                () => TaskIsDue?.Invoke(e.Sender, e)
-                , this.Cts.Token);
+                throw new NullReferenceException("Cts is null in HTaskScheduler.RaiseTaskIsDueAsync()");
+            // Get the invocation list and invoke each handler asynchronously
+
+            //var tasks = new List<Task>();
+            //foreach (AsyncEventHandler<HTaskEventArgs> handler in TaskIsDue.GetInvocationList())
+            //{
+            //    tasks.Add(handler(e.Sender, e, this.Cts.Token));
+            //}
+
+            if (this.Cts.Token.IsCancellationRequested) return;
+
+            await Task.WhenAll(TaskIsDue.GetInvocationList()
+                .Cast<AsyncEventHandler<HTaskEventArgs>>()
+                .Select(handler =>
+                    handler(e.Sender, e, this.Cts.Token)
+                ));
+
+
+            //await Task.WhenAll(tasks);
         }
+
 
         #endregion
 
         #region OnTaskExecutionError
 
-        public delegate void TaskExecutionErrorEventHandler(object sender, HTaskExecutionErrorEventArgs e);
         /// <summary>
         /// Gets triggered whenever there is an error that might get supressed if retry on error is enabled
         /// </summary>
-        public event TaskExecutionErrorEventHandler? TaskExecutionError;
-        protected virtual Task OnTaskExecutionErrorAsync(HTaskExecutionErrorEventArgs e)
+        public event AsyncEventHandler<HTaskExecutionErrorEventArgs> TaskExecutionError;
+        protected async Task RaiseTaskExecutionErrorAsync(HTaskExecutionErrorEventArgs e)
         {
-            if (e == null) return Task.CompletedTask;
+            if (e == null || TaskExecutionError is null) return;
             if (this.Cts is null)
-                throw new NullReferenceException("Cts is null in HTaskScheduler.OnTaskExecutionErrorAsync()");
-            return Cancellable.CancellableRunAsync(
-                () => TaskExecutionError?.Invoke(e.Sender, e)
-                , this.Cts.Token);
+                throw new NullReferenceException("Cts is null in HTaskScheduler.RaiseTaskExecutionErrorAsync()");
+            var tasks = new List<Task>();
+
+            await Task.WhenAll(TaskExecutionError.GetInvocationList()
+                .Cast<AsyncEventHandler<HTaskExecutionErrorEventArgs>>()
+                .Select(handler =>
+                    handler(e.Sender, e, this.Cts.Token)
+                ));
         }
 
         #endregion
@@ -435,15 +484,20 @@ namespace Com.H.Threading.Scheduler
         /// <summary>
         /// Gets triggered whenever there is an error loading tasks.
         /// </summary>
-        public event HErrorEventHandler? TaskLoadingError;
-        protected virtual Task OnTaskLoadingErrorAsync(HErrorEventArgs e)
+        public event AsyncEventHandler<HErrorEventArgs> TaskLoadingError;
+        protected async Task RaiseTaskLoadingErrorAsync(HErrorEventArgs e)
         {
-            if (e == null) return Task.CompletedTask;
+            if (e is null || TaskIsDue is null) return; // Task.CompletedTask;
             if (this.Cts is null)
-                throw new NullReferenceException("Cts is null in HTaskScheduler.OnTaskLoadingErrorAsync()");
-            return Cancellable.CancellableRunAsync(
-                () => TaskLoadingError?.Invoke(e.Sender, e)
-                , this.Cts.Token);
+                throw new NullReferenceException("Cts is null in HTaskScheduler.RaiseTaskLoadingErrorAsync()");
+
+            if (this.Cts.Token.IsCancellationRequested) return;
+
+            await Task.WhenAll(TaskLoadingError.GetInvocationList()
+                .Cast<AsyncEventHandler<HErrorEventArgs>>()
+                .Select(handler =>
+                    handler(e.Sender, e, this.Cts.Token)
+                ));
         }
 
         #endregion

@@ -13,6 +13,12 @@ Perhaps the easiest way is to install the package for this library is done via N
  
 Alternatively, you can clone / download the library from this github repo, compile, then reference the output dlls in your project.
 
+Also, if you intend to use this libray in a worker process application hosted as a Windows service, you can follow the instructions at [https://github.com/h7o/Com.H.Threading.Scheduler.DI](https://github.com/h7o/Com.H.Threading.Scheduler.DI) on how to do that using a ready extension to IServiceCollection for easy integration with .NET Core worker services.
+
+
+Nuget package of the extension can be found at [https://www.nuget.org/packages/Com.H.Threading.Scheduler.DI/](https://www.nuget.org/packages/Com.H.Threading.Scheduler.DI/)
+
+Just by installing the extension package, this library would be automatically installed as a dependency.
 
 ## Examples
 
@@ -73,41 +79,40 @@ What's left is writing our desired code that we want to get called by the engine
 
 > Program.cs
 ```c#
-using System;
-using System.IO;
+using System.Threading.Tasks;
 using Com.H.Threading.Scheduler;
 
-namespace scheduler_tester
+namespace Com.H.Threading.Scheduler_Samples
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-			// path to our config file
-            var configPath = Path.Combine(Directory.GetCurrentDirectory(), "scheduler.xml");
-			// throw error if config file not found in current folder
-            if (File.Exists(configPath)==false) throw new FileNotFoundException(configPath);
-			// instantiate the scheduler engine
+            // path to our config file
+            var configPath = Path.Combine(AppContext.BaseDirectory, "scheduler.xml");
+            // throw error if config file not found in current folder
+            if (File.Exists(configPath) == false) throw new FileNotFoundException(configPath);
+            // instantiate the scheduler engine
             var scheduler = new HTaskScheduler(configPath);
-			// listen for the event that the engine triggers based on our config <sys> tag conditions
-            scheduler.TaskIsDue += HandleTask;
-			// start the scheduler engine
-            scheduler.Start();
-			// wait for <enter> input from screen to stop the scheduler engine
-            System.Console.WriteLine("press <enter> to exit.");
-            Console.ReadLine();
-            scheduler.Stop();
-            System.Console.WriteLine("done.");
+            // listen for the event that the engine triggers based on our config <sys> tag conditions
+            scheduler.TaskIsDue += Scheduler_TaskIsDue;
+
+            // wait for <ctrl> + c input from screen to stop the scheduler engine
+            Console.WriteLine("press <ctrl> + c to exit.");
+
+            // start the scheduler engine
+            await scheduler.StartAsync();
         }
-		
-		// the code we want the engine to call at runtime
-        static void HandleTask(object sender, HTaskSchedulerEventArgs e)
+
+        // the code we want the engine to call at runtime
+        private static async Task Scheduler_TaskIsDue(object sender, HTaskEventArgs e, CancellationToken cancellationToken = default)
         {
-			// print the content stored in <greeting_message> tag
-            System.Console.WriteLine(e["greeting_message"]);
+            // print the content stored in <greeting_message> tag
+            Console.WriteLine(e["greeting_message"]);
         }
     }
 }
+
 ```
 > output
 
@@ -122,6 +127,45 @@ Aside from maintaining persistency during restarts, the engine also detects chan
 The engine achieves this through generating and keeping both in memory and in the persistant log file a sha256 sum of each task defined in the config file so that any modification made to the config file can be followed by a sha256 integrity check on all tasks to determine which were the ones modified.
 
 The modified tasks then gets treated as entirely new tasks having a clean run status history making them eligible for running in accordance with their `<sys>` tag run conditions.
+
+This feature is particularly useful when we need to make changes to the config file without having to restart the application to apply those changes.
+
+> **Note**: If you wish to use the library in a synchronous manner, you can do use the `Start` method instead of `StartAsync` method. Here is how you can do it:
+  ```c#
+  using Com.H.Threading.Scheduler;
+
+  internal class Program
+  {
+      static async Task Main(string[] args)
+      {
+          // path to our config file
+          var configPath = Path.Combine(AppContext.BaseDirectory, "config", "example1.xml");
+          // throw error if config file not found in current folder
+          if (File.Exists(configPath) == false) throw new FileNotFoundException(configPath);
+          // instantiate the scheduler engine
+          var scheduler = new HTaskScheduler(configPath);
+          // listen for the event that the engine triggers based on our config <sys> tag conditions
+          scheduler.TaskIsDue += Scheduler_TaskIsDue;
+
+          // start the scheduler engine
+          scheduler.Start();
+
+          // wait for <enter> key from screen to stop the scheduler engine
+          Console.WriteLine("press <enter> to exit.");
+          Console.ReadLine();
+          scheduler.Stop();
+          Console.WriteLine("done.");
+      }
+
+      // the code we want the engine to call at runtime
+      private static async Task Scheduler_TaskIsDue(object sender, HTaskEventArgs e, CancellationToken cancellationToken = default)
+      {
+          // print the content stored in <greeting_message> tag
+          Console.WriteLine(e["greeting_message"]);
+      }
+  }
+
+  ```
 
 ---
 ### **Example 2 - Running a sample code on an interval (every n seconds) during the day.**
@@ -279,51 +323,55 @@ To build such logic, let's first write our configuration file:
 Now let's build our solution that handles those two tasks.
 > Program.cs
 ```c#
-using System;
-using System.IO;
-using System.Linq;
 using Com.H.Threading.Scheduler;
 
-namespace scheduler_tester
+class Program
 {
-    class Program
+    static async Task Main(string[] args)
     {
-        static void Main(string[] args)
-        {
-            var configPath = Path.Combine(Directory.GetCurrentDirectory(), "scheduler.xml");
-            if (File.Exists(configPath)==false) throw new FileNotFoundException(configPath);
-            var scheduler = new HTaskScheduler(configPath);
-            scheduler.TaskIsDue += HandleTask;
-            scheduler.Start();
-            System.Console.WriteLine("press <enter> to exit.");
-            Console.ReadLine();
-            scheduler.Stop();
-            System.Console.WriteLine("done.");
-        }
-        static void HandleTask(object sender, HTaskSchedulerEventArgs e)
-        {
-            switch(e["name"] as string)
-            {
-                case "print a message": ProcessPrintMessageTask(e);
-                break;
-                case "calculate some numbers": ProcessCountNumbersTask(e);
-                break;
-                default:System.Console.WriteLine("unknown task");
-                break;
-            }
-        }
+        // path to our config file
+        var configPath = Path.Combine(AppContext.BaseDirectory, "scheduler.xml");
+        // throw error if config file not found in current folder
+        if (File.Exists(configPath) == false) throw new FileNotFoundException(configPath);
+        // instantiate the scheduler engine
+        var scheduler = new HTaskScheduler(configPath);
+        // listen for the event that the engine triggers based on our config <sys> tag conditions
+        scheduler.TaskIsDue += Scheduler_TaskIsDue;
 
-        static void ProcessPrintMessageTask(HTaskSchedulerEventArgs e)
+        // wait for <ctrl> + c input from screen to stop the scheduler engine
+        Console.WriteLine("press <ctrl> + c to exit.");
+
+        // start the scheduler engine
+        await scheduler.StartAsync();
+    }
+
+    private static async Task Scheduler_TaskIsDue(object sender, HTaskEventArgs e, CancellationToken cancellationToken = default)
+    {
+        switch (e["name"] as string)
         {
-            System.Console.WriteLine(e["greeting_message"]);
+            case "print a message":
+                ProcessPrintMessageTask(e);
+                break;
+            case "calculate some numbers":
+                ProcessCountNumbersTask(e);
+                break;
+            default:
+                System.Console.WriteLine("unknown task");
+                break;
         }
-        static void ProcessCountNumbersTask(HTaskSchedulerEventArgs e)
-        {
-            int sum = e["some_numbers"]
-                .Split(new char[] {','}, StringSplitOptions.RemoveEmptyEntries)
-                .Select(num=>int.Parse(num)).Sum();
-            System.Console.WriteLine($"sum of {e["some_numbers"]} = {sum}");    
-        }
+    }
+
+    static void ProcessPrintMessageTask(HTaskEventArgs e)
+    {
+        System.Console.WriteLine(e["greeting_message"]);
+    }
+
+    static void ProcessCountNumbersTask(HTaskEventArgs e)
+    {
+        int sum = e["some_numbers"]
+            .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(num => int.Parse(num)).Sum();
+        System.Console.WriteLine($"sum of {e["some_numbers"]} = {sum}");
     }
 }
 ```
