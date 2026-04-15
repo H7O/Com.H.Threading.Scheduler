@@ -7,6 +7,9 @@
     <AssemblyName>Com.H.Threading.Scheduler</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
     <GenerateDocumentationFile>False</GenerateDocumentationFile>
+    <DebugType>embedded</DebugType>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <SignAssembly>False</SignAssembly>
     <Version>10.0.0.0</Version>
     <Authors>Hussein Al Bayati</Authors>
@@ -41,6 +44,7 @@
 
   <ItemGroup>
     <PackageReference Include="Com.H" Version="[10.1.0, 11.0.0)" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.*" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>
