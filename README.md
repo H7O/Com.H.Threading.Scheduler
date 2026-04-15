@@ -1,38 +1,44 @@
 # Com.H.Threading.Scheduler
-An easy to use, simple, yet feature-rich open-source framework for writing middlewares in the form of low resource footnote Windows services, Linux Daemons and/or Microservices.
- 
-## What's the purpose of this library?
-This library helps build solutions that require some of their time sensitive logic to conditinally run as a background process without user input.
 
-And although most solutions might not have the need for such time-sensitive background process logic, the ones that do would hopefully benefit from what this library offers.
+An easy-to-use, feature-rich, open-source scheduling framework for building background services as Windows services, Linux daemons, or containerized microservices.
 
-One of the goals of this library is to help developers write background services while focusing only on what matters, which is the logic that needs to run in the background, and leaving the process scheduling details conveniently hidden behind an easy to use, feature-rich, efficient and hopefully reliable scheduling engine tucked away in this small library.
+## Purpose
 
-## How to install
-Perhaps the easiest way is to install the package for this library is done via NuGet package manager [https://www.nuget.org/packages/Com.H.Threading.Scheduler/](https://www.nuget.org/packages/Com.H.Threading.Scheduler/)
- 
-Alternatively, you can clone / download the library from this github repo, compile, then reference the output dlls in your project.
+This library lets you write background services while focusing only on the business logic. You define **when** tasks should run in a simple XML configuration file, and the scheduling engine takes care of the rest — concurrency, persistence, error recovery, retries, and hot-reloading of configuration changes at runtime.
 
-Also, if you intend to use this libray in a worker process application hosted as a Windows service, you can follow the instructions at [https://github.com/h7o/Com.H.Threading.Scheduler.DI](https://github.com/h7o/Com.H.Threading.Scheduler.DI) on how to do that using a ready extension to IServiceCollection for easy integration with .NET Core worker services.
+## Installation
 
+Install via NuGet:
 
-Nuget package of the extension can be found at [https://www.nuget.org/packages/Com.H.Threading.Scheduler.DI/](https://www.nuget.org/packages/Com.H.Threading.Scheduler.DI/)
+```
+dotnet add package Com.H.Threading.Scheduler
+```
 
-Just by installing the extension package, this library would be automatically installed as a dependency.
+Or browse the package on [nuget.org](https://www.nuget.org/packages/Com.H.Threading.Scheduler/).
+
+Alternatively, clone this repo, build, and reference the output DLLs directly.
+
+### Dependency injection for worker services
+
+For .NET worker services hosted as Windows services or Linux daemons, use the [Com.H.Threading.Scheduler.DI](https://github.com/h7o/Com.H.Threading.Scheduler.DI) extension package which provides `IServiceCollection` integration:
+
+```
+dotnet add package Com.H.Threading.Scheduler.DI
+```
+
+Installing the DI package automatically includes this base library as a dependency.
+
+## Quick start
+
+The scheduler reads task definitions from an XML configuration file. Each task has a `<sys>` element that defines **when** it runs, and any number of custom elements that carry **data** your code receives at runtime.
 
 ## Examples
 
-The following examples are orginized to cover scenarious in the order from simple scheduling requirements to comprehensive scheduling that showcase the depth of the feature-set this library offers.
+The examples below progress from simple to advanced, gradually introducing the scheduler's features.
 
 ---
 
-### **Example 1 - Running a sample code once a day at a specific time.**
-
-This simple example demonstrate how to use the library to build a console application that runs some logic once a day at a specific time.
-
-The first thing we need to do before writing code is prepare a simple configuration file that tells the library of the rules it's scheduling engine needs to follow when scheduling tasks (note: `tasks` might also be referred to in this document as `services` or `processes`, all intended to mean the same thing, which is simply a block of code that needs to be executed). 
-
-We'll discuss the configuration file format in details later-on, but for now, let's build a simple config file to serve as a sample of what the configuration file structure looks like. Later-on, we can reveal more scheduling control features available to setup in the config file as we go through more examples.
+### Example 1 — Run once a day at a specific time
 
 > scheduler.xml
 ```xml
@@ -42,139 +48,74 @@ We'll discuss the configuration file format in details later-on, but for now, le
     <sys>
       <time>11:00</time>
     </sys>
-    <greeting_message>Good morning! it's 11:00 AM!</greeting_message>
-  </task>
-</tasks_list>
-```
----
-> the same scheduler.xml file above but with comments describing the configuration tags
-```xml
-<?xml version="1.0" encoding="utf-8" ?>
-<!-- the first root tag is the container of tasks (aka services / aka prcocesses), and the root tag name itself can be anything we like -->
-<!-- let's call it <tasks_list> in this example -->
-<tasks_list>
-<!-- inside <tasks_list> we have our individual tasks (could be one or many tasks)-->
-<!-- let's simply call <task> the tag that identifies individual tasks within the <tasks_list> tag  -->
-  <task>
-	<!-- the scheduling engine within the library looks for the <sys> tag inside each <task> to get the rules it needs to follow when execute a task -->
-    <sys>
-	  <!-- this task example has only one rule, which is the <time> rule, this rule tells the engine to run this task only once a day at 11:00 AM -->
-      <time>11:00</time>
-    </sys>
-	<!-- a custom tag that the we'd like the library to pass to our code when it gets triggers  -->
-    <greeting_message>Good morning! it's 11:00 AM!</greeting_message>
+    <greeting_message>Good morning! It's 11:00 AM!</greeting_message>
   </task>
 </tasks_list>
 ```
 
+**What's happening here:**
 
-The configuration above tells the scheduler engine to run our desired code once every day at 11:00 AM and passes it the information we placed under the custom tag `<greeting_message>`.
-
-> **Note 1:** You can add as many custom tags (including nested custom tags) to the configuration and the scheduler engine would pass them all to your code at runtime when it gets called for execution. More details on that later-on in **`custom tags`** section
-
-> **Note 2:** You can add as many tasks as you want with different or same run conditions and the engine would run them all concurrently.
-
-
-What's left is writing our desired code that we want to get called by the engine at 11:00 AM.
+- `<tasks_list>` is the root container — the tag name can be anything you like.
+- Each `<task>` defines a scheduled unit of work.
+- `<sys>` contains scheduling rules. Here, `<time>11:00</time>` means "run once per day at 11:00 AM."
+- `<greeting_message>` is a **custom tag** — the engine passes it through to your code untouched.
 
 > Program.cs
-```c#
-using System.Threading.Tasks;
+```csharp
 using Com.H.Threading.Scheduler;
 
-namespace SchedulerExample
+var configPath = Path.Combine(AppContext.BaseDirectory, "scheduler.xml");
+if (!File.Exists(configPath)) throw new FileNotFoundException(configPath);
+
+var scheduler = new HTaskScheduler(configPath);
+scheduler.TaskIsDue += async (object sender, HTaskEventArgs e, CancellationToken ct) =>
 {
-    internal class Program
-    {
-        static async Task Main(string[] args)
-        {
-            // path to our config file
-            var configPath = Path.Combine(AppContext.BaseDirectory, "scheduler.xml");
-            // throw error if config file not found in current folder
-            if (File.Exists(configPath) == false) throw new FileNotFoundException(configPath);
-            // instantiate the scheduler engine
-            var scheduler = new HTaskScheduler(configPath);
-            // listen for the event that the engine triggers based on our config <sys> tag conditions
-            scheduler.TaskIsDue += Scheduler_TaskIsDue;
+    Console.WriteLine(e["greeting_message"]);
+};
 
-            // wait for <ctrl> + c input from screen to stop the scheduler engine
-            Console.WriteLine("press <ctrl> + c to exit.");
-
-            // start the scheduler engine
-            await scheduler.StartAsync();
-        }
-
-        // the code we want the engine to call at runtime
-        private static async Task Scheduler_TaskIsDue(object sender, HTaskEventArgs e, CancellationToken cancellationToken = default)
-        {
-            // print the content stored in <greeting_message> tag
-            Console.WriteLine(e["greeting_message"]);
-        }
-    }
-}
-
+Console.WriteLine("Press <ctrl+c> to exit.");
+await scheduler.StartAsync();
 ```
-> output
 
-```bash
-Good morning! it's 11:00 AM!
-press <enter> to exit.
+**Output** (at 11:00 AM):
 ```
-Once the task runs and our message is printed, you'll notice a new file is generated by the name of `scheduler.xml.log` under the same folder where `scheduler.xml` resides. This is the log file the engine uses to keep track of which tasks ran successfully so it could mark them as completed in order to maintain persistency if we were to restart the application. This prevents tasks from running again on restarts if they were not meant to do so.
+Good morning! It's 11:00 AM!
+```
 
-Aside from maintaining persistency during restarts, the engine also detects changes made to the config file during both runtime and even between restarts prompting it to re-evaluate the modified tasks `<sys>` tag run conditions.
+#### How persistence works
 
-The engine achieves this through generating and keeping both in memory and in the persistant log file a sha256 sum of each task defined in the config file so that any modification made to the config file can be followed by a sha256 integrity check on all tasks to determine which were the ones modified.
+After the task runs, a `scheduler.xml.log` file appears alongside `scheduler.xml`. This log tracks which tasks have already executed (keyed by a SHA-256 hash of each task's XML content), so tasks don't re-run unexpectedly after an application restart.
 
-The modified tasks then gets treated as entirely new tasks having a clean run status history making them eligible for running in accordance with their `<sys>` tag run conditions.
+If you modify a task's XML, its hash changes and the engine treats it as a new task with a clean execution history, making it eligible to run again.
 
-This feature is particularly useful when we need to make changes to the config file without having to restart the application to apply those changes.
+#### Async vs fire-and-forget
 
-> **Note**: If you wish to use the library in a synchronous manner, you can do use the `Start` method instead of `StartAsync` method. Here is how you can do it:
-  ```c#
-  using Com.H.Threading.Scheduler;
+`StartAsync` blocks (awaits) until cancelled. If you need the scheduler running in the background while doing other work, use `Start` instead:
 
-  internal class Program
-  {
-      static async Task Main(string[] args)
-      {
-          // path to our config file
-          var configPath = Path.Combine(AppContext.BaseDirectory, "config", "example1.xml");
-          // throw error if config file not found in current folder
-          if (File.Exists(configPath) == false) throw new FileNotFoundException(configPath);
-          // instantiate the scheduler engine
-          var scheduler = new HTaskScheduler(configPath);
-          // listen for the event that the engine triggers based on our config <sys> tag conditions
-          scheduler.TaskIsDue += Scheduler_TaskIsDue;
+```csharp
+using Com.H.Threading.Scheduler;
 
-          // start the scheduler engine
-          scheduler.Start();
+var configPath = Path.Combine(AppContext.BaseDirectory, "scheduler.xml");
+if (!File.Exists(configPath)) throw new FileNotFoundException(configPath);
 
-          // wait for <enter> key from screen to stop the scheduler engine
-          Console.WriteLine("press <enter> to exit.");
-          Console.ReadLine();
-          scheduler.Stop();
-          Console.WriteLine("done.");
-      }
+var scheduler = new HTaskScheduler(configPath);
+scheduler.TaskIsDue += async (object sender, HTaskEventArgs e, CancellationToken ct) =>
+{
+    Console.WriteLine(e["greeting_message"]);
+};
 
-      // the code we want the engine to call at runtime
-      private static async Task Scheduler_TaskIsDue(object sender, HTaskEventArgs e, CancellationToken cancellationToken = default)
-      {
-          // print the content stored in <greeting_message> tag
-          Console.WriteLine(e["greeting_message"]);
-      }
-  }
+scheduler.Start(); // non-blocking — runs in the background
 
-  ```
+Console.WriteLine("Press <enter> to exit.");
+Console.ReadLine();
+scheduler.Stop();
+```
 
 ---
-### **Example 2 - Running a sample code on an interval (every n seconds) during the day.**
 
-This example demonstrate running the same code we've written in **Example 1** every 3 seconds instead of once per day.
+### Example 2 — Run on a fixed interval
 
-To achieve this, all we need to do is modify the config file and set `<interval>` run condition while removing `<time>` condition.
-
-The new config file would look like the following:
+Replace `<time>` with `<interval>` (in milliseconds) to run a task repeatedly throughout the day:
 
 > scheduler.xml
 ```xml
@@ -182,23 +123,20 @@ The new config file would look like the following:
 <tasks_list>
   <task>
     <sys>
-	  <!-- this task example has only one rule, which is the <interval> rule, 
-	  this rule tells the engine to run this task every 3,000 miliseconds 
-	  (i.e 3 seconds) all throughout the day -->
       <interval>3000</interval>
     </sys>
     <greeting_message>Hello there!</greeting_message>
   </task>
 </tasks_list>
 ```
-The `<interval>` tag expects miliseconds and instruct the engine to trigger the task every so often on a fixed interval based on the defined miliseconds.
+
+This runs every 3 seconds, all day. The C# code from Example 1 works unchanged.
 
 ---
-### **Example 3 - Running a sample code on an interval (every n seconds) during specific time of the day.**
 
-This example demonstrate running the same code in **Example 1 & 2** but on every 3 seconds between 9:00 AM and 2:00 PM every day.
+### Example 3 — Interval within a time window
 
-This can be achieved by combining `<interval>` with `<time>` and a new tag called `<until_time>`
+Combine `<interval>` with `<time>` and `<until_time>` to restrict when the interval is active:
 
 > scheduler.xml
 ```xml
@@ -206,33 +144,24 @@ This can be achieved by combining `<interval>` with `<time>` and a new tag calle
 <tasks_list>
   <task>
     <sys>
-	  <!-- this task example has 3 rules: 
-	  <interval> to determine how often it runs
-	  <time> to determine from what time it start running
-	  <time_end> to determine until what time it runs 
-	  -->
-		<time>09:00</time>
-		<until_time>14:00</until_time>
-		<interval>3000</interval>
+      <time>09:00</time>
+      <until_time>14:00</until_time>
+      <interval>3000</interval>
     </sys>
     <greeting_message>Hello there!</greeting_message>
   </task>
 </tasks_list>
 ```
-The `<interval>` tag expects miliseconds and instruct the engine to trigger the task every so often on a fixed interval based on the defined miliseconds.
 
-The `<time>` tag expects a time format of HH:mm instructing the engine when to start running the task.
+This runs every 3 seconds between 9:00 AM and 2:00 PM each day.
 
-The `<until_time>` tag expects a time format of HH:mm instructing the engine until what time the task should continue to run.
-
-> Note: if no `<time>` tag is defined, the engine would start running the task at 00:00 hour until `<until_time>`. Similarily, if no `<until_time>` tag is defined, the engine would start running the task from `<time>` until end of the day.
+> **Note:** If `<time>` is omitted, the window starts at midnight. If `<until_time>` is omitted, it runs until end of day.
 
 ---
-### **Example 4 - Running a sample code on an interval (every n seconds) during specific time and on specific days of the week.**
 
-This example demonstrate running the same code in **Example 1 & 2 & 3** every 3 seconds between 9:00 AM and 2:00 PM only on Monday and Thursday.
+### Example 4 — Restrict to specific days of the week
 
-This is achieved by adding **days of the week** rule `<dow>`
+Add `<dow>` to limit which days the task runs:
 
 > scheduler.xml
 ```xml
@@ -240,61 +169,57 @@ This is achieved by adding **days of the week** rule `<dow>`
 <tasks_list>
   <task>
     <sys>
-	  <!-- this task example has 4 rules:
-	  <interval> rule to determine how often it runs 
-	  <time> rule to determine from what time to start running 
-	  <time_end> to determine until what time to run 
-	  <dow> to determine on what days of the week it's allowed to run.
-	  -->
-		<time>09:00</time>
-		<until_time>14:00</until_time>
-		<interval>3000</interval>
-		<dow>Monday,Thursday</dow>
+      <time>09:00</time>
+      <until_time>14:00</until_time>
+      <interval>3000</interval>
+      <dow>Monday,Thursday</dow>
     </sys>
     <greeting_message>Hello there!</greeting_message>
   </task>
 </tasks_list>
 ```
 
----
-## General conditional tags
-Here is the list of all `general conditional tags` (i.e. run rules) available.
-
-| Tag        | Function                                  | Format                        | Example         |
-|------------|-------------------------------------------|-------------------------------|-----------------|
-| interval   | How often it runs in miliseconds          | miliseconds                   | 3000            |
-| time       | From what time to start running           | HH:mm                         | 14:32           |
-| until_time | Until what time to run                    | HH:mm                         | 23:15           |
-| dow        | What days of the week allowed to run      | Comma separated weekday names | Monday,Thursday |
-| dom        | What days of the month allowed to run     | Days of the month             | 1,5,23          |
-| eom        | End of month (i.e. last day of the month) | true or false                 | true            |
-| doy        | What days of the year allowed to run      | days of the year              | 53,250,300      |
-| dates      | On specific dates (pipe delimited)        | yyyy-MM-dd                    | 2077-01-23      |
-| enabled    | enables or disables the task              | true or false                 | true            |
-| not_before | Date & time not to run before             | yyyy-MM-dd HH:mm:ss           | 2077-01-23 14:23|
-| not_after  | Date & time not to run after              | yyyy-MM-dd HH:mm:ss           | 2077-01-23 14:23|
-
-
+All scheduling rules are composable — the engine requires **all** conditions to be true before running a task.
 
 ---
+
+## Scheduling rules reference
+
+All rules are placed inside the `<sys>` element. When multiple rules are present, **all** must be satisfied for a task to run.
+
+| Tag | Description | Format | Example |
+|-----|-------------|--------|---------|
+| `enabled` | Enable or disable the task | `true` / `false` | `true` |
+| `not_before` | Earliest date/time the task can run | `yyyy-MM-dd HH:mm:ss` | `2026-06-01 08:00:00` |
+| `not_after` | Latest date/time the task can run | `yyyy-MM-dd HH:mm:ss` | `2026-12-31 23:59:59` |
+| `dates` | Run only on specific dates (pipe-delimited) | `yyyy-MM-dd` or `MM-dd` | `2026-01-15\|\|2026-07-04` |
+| `doy` | Days of the year (comma or range) | Integer 1–366 | `1,60,120..130` |
+| `eom` | Run on the last day of the month | `true` / `false` | `true` |
+| `bom` | Run on the first day of the month | `true` / `false` | `true` |
+| `dom` | Days of the month (comma or range) | Integer 1–31 | `1,15,28..31` |
+| `dow` | Days of the week (comma-separated, case-insensitive) | Weekday names | `Monday,Wednesday,Friday` |
+| `time` | Time of day to start (or single daily run if no interval) | `HH:mm` or `HH:mm:ss` | `14:30` |
+| `until_time` | Time of day to stop running | `HH:mm` or `HH:mm:ss` | `23:00` |
+| `interval` | Milliseconds between consecutive runs | Positive integer | `5000` |
+| `ignore_log_on_restart` | Clear this task's log on scheduler restart, forcing it to re-run | `true` / `false` | `true` |
+
+**Evaluation order:** `enabled` → `not_before` → `not_after` → `dates` → `doy` → `eom`/`bom`/`dom` → `dow` → `time` → `until_time` → `interval` (or once-per-day check).
+
+### Range syntax for `dom`, `doy`
+
+Use `..` for ranges: `<dom>1,15,25..28</dom>` matches the 1st, 15th, and 25th through 28th of each month.
+
+---
+
 ## Custom tags
-Custom tags are treated as configuration information that the scheduler engine just passes to your code when executing a task. You can put as much as you want information inside those tags, and have as many custom tags as you want for each task.
 
-In previous examples, we've seen how we used the custom tag `<greeting_message>` to pass information to our task to print a message on screen.
+Any XML element outside of `<sys>` is a **custom tag**. The engine passes these through to your code via the `HTaskEventArgs` indexer.
 
-We can come up with many different examples of information that we might want to pass to a task, as custom tags not only help us pass information about a specific task, they also help us identify which task is calling our code if we have defined multiple tasks in our config file.
+Custom tags are useful for:
+- Passing configuration data to your task logic
+- Identifying which task triggered the event when multiple tasks share one handler
 
-In a large application that has different multiple types of tasks and different ways of handling each particular task, custom tags come handy in identifying which task called our code so we can route the handling of that task to the appropriate logic in our application.
-
-For example, giving the task a `<name>` custom tag is a good practice that helps our code know which task issued the call.
-
-The following example showcase how to make use of a custom tag to help identify what logic to run when we have multiple tasks.
-
-### **Example 5 - Running two different tasks.**
-
-This exapmle demonstrate running two different tasks, each requires us to handle it differently than the other. One task is to print a message on screen, the other is to calculate the sum of random numbers then prints the result on screen.
-
-To build such logic, let's first write our configuration file:
+### Example 5 — Multiple tasks with different handlers
 
 > scheduler.xml
 ```xml
@@ -303,125 +228,571 @@ To build such logic, let's first write our configuration file:
   <task>
     <name>print a message</name>
     <sys>
-	    <!-- this task is set to run every 3 seconds -->
-		  <interval>3000</interval>
+      <interval>3000</interval>
     </sys>
-    
     <greeting_message>Hello there!</greeting_message>
   </task>
   <task>
     <name>calculate some numbers</name>
     <sys>
-	    <!-- this task is set to run every 2 seconds -->
-		  <interval>2000</interval>
+      <interval>2000</interval>
     </sys>
     <some_numbers>32,56,4,67,1</some_numbers>
   </task>
 </tasks_list>
 ```
 
-Now let's build our solution that handles those two tasks.
 > Program.cs
-```c#
+```csharp
 using Com.H.Threading.Scheduler;
 
-class Program
+var configPath = Path.Combine(AppContext.BaseDirectory, "scheduler.xml");
+if (!File.Exists(configPath)) throw new FileNotFoundException(configPath);
+
+var scheduler = new HTaskScheduler(configPath);
+
+scheduler.TaskIsDue += async (object sender, HTaskEventArgs e, CancellationToken ct) =>
 {
-    static async Task Main(string[] args)
+    switch (e["name"])
     {
-        // path to our config file
-        var configPath = Path.Combine(AppContext.BaseDirectory, "scheduler.xml");
-        // throw error if config file not found in current folder
-        if (File.Exists(configPath) == false) throw new FileNotFoundException(configPath);
-        // instantiate the scheduler engine
-        var scheduler = new HTaskScheduler(configPath);
-        // listen for the event that the engine triggers based on our config <sys> tag conditions
-        scheduler.TaskIsDue += Scheduler_TaskIsDue;
-
-        // wait for <ctrl> + c input from screen to stop the scheduler engine
-        Console.WriteLine("press <ctrl> + c to exit.");
-
-        // start the scheduler engine
-        await scheduler.StartAsync();
+        case "print a message":
+            Console.WriteLine(e["greeting_message"]);
+            break;
+        case "calculate some numbers":
+            var sum = e["some_numbers"]!
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(int.Parse).Sum();
+            Console.WriteLine($"sum of {e["some_numbers"]} = {sum}");
+            break;
     }
+};
 
-    private static async Task Scheduler_TaskIsDue(object sender, HTaskEventArgs e, CancellationToken cancellationToken = default)
-    {
-        switch (e["name"] as string)
-        {
-            case "print a message":
-                ProcessPrintMessageTask(e);
-                break;
-            case "calculate some numbers":
-                ProcessCountNumbersTask(e);
-                break;
-            default:
-                System.Console.WriteLine("unknown task");
-                break;
-        }
-    }
-
-    static void ProcessPrintMessageTask(HTaskEventArgs e)
-    {
-        System.Console.WriteLine(e["greeting_message"]);
-    }
-
-    static void ProcessCountNumbersTask(HTaskEventArgs e)
-    {
-        int sum = e["some_numbers"]
-            .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(num => int.Parse(num)).Sum();
-        System.Console.WriteLine($"sum of {e["some_numbers"]} = {sum}");
-    }
-}
+Console.WriteLine("Press <ctrl+c> to exit.");
+await scheduler.StartAsync();
 ```
 
-> **NOTE**: You could use `<id>` or any other custom tag beside `<name>` to identify tasks. It's entirely up to you and how you'd like to choose your best practices for your own workflow. This is just one example on how one could come about to do so.
+### Nested custom tags
+
+Custom tags can be nested. Access child elements using a path separator (`/`):
+
+```xml
+<task>
+  <sys><interval>5000</interval></sys>
+  <config>
+    <database>Server=myserver;Database=mydb</database>
+    <timeout>30</timeout>
+  </config>
+</task>
+```
+
+```csharp
+string connStr = e["config/database"];  // "Server=myserver;Database=mydb"
+string timeout = e["config/timeout"];   // "30"
+```
+
+You can also retrieve child items programmatically:
+
+```csharp
+IHTaskItem? configItem = e.GetItem("config");
+IEnumerable<string?>? allValues = e.GetValues("config/database");
+```
 
 ---
-## Special conditional tags
-Documentation in progress. Stay tuned.
+
+## Retry on error
+
+The scheduler can automatically retry a task when it throws an exception, with configurable attempt limits and delay between retries.
+
+| Tag | Description | Format |
+|-----|-------------|--------|
+| `retry_attempts_on_error` | Maximum number of retry attempts | Positive integer |
+| `sleep_on_error` | Milliseconds to wait before retrying | Positive integer (ms) |
+
+### Example 6 — Retry a failing task
+
+> scheduler.xml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<tasks_list>
+  <task>
+    <name>flaky api call</name>
+    <sys>
+      <interval>10000</interval>
+      <retry_attempts_on_error>3</retry_attempts_on_error>
+      <sleep_on_error>5000</sleep_on_error>
+    </sys>
+    <api_url>https://api.example.com/data</api_url>
+  </task>
+</tasks_list>
+```
+
+> Program.cs
+```csharp
+using Com.H.Threading.Scheduler;
+
+var configPath = Path.Combine(AppContext.BaseDirectory, "scheduler.xml");
+if (!File.Exists(configPath)) throw new FileNotFoundException(configPath);
+
+var scheduler = new HTaskScheduler(configPath);
+
+scheduler.TaskIsDue += async (object sender, HTaskEventArgs e, CancellationToken ct) =>
+{
+    // If this throws, the scheduler retries up to 3 times, waiting 5 seconds between attempts
+    using var http = new HttpClient();
+    var result = await http.GetStringAsync(e["api_url"], ct);
+    Console.WriteLine($"Received {result.Length} chars from API");
+};
+
+// Subscribe to error events for logging
+scheduler.TaskExecutionError += async (object sender, HTaskExecutionErrorEventArgs e, CancellationToken ct) =>
+{
+    Console.WriteLine($"Task error: {e.Exception.Message}");
+};
+
+Console.WriteLine("Press <ctrl+c> to exit.");
+await scheduler.StartAsync();
+```
+
+When retry is enabled, exceptions are **suppressed** from the caller and the `TaskExecutionError` event is raised instead. The error count resets to zero after a successful execution.
 
 ---
-### Retry on error
-Documentation in progress. Stay tuned.
 
-#### Retry attempts
-Documentation in progress. Stay tuned.
-
-#### Retry interval
-Documentation in progress. Stay tuned.
-
----
 ## Variables
-Documentation in progress. Stay tuned.
+
+The scheduler supports placeholder variables in custom tag values. These are replaced at runtime before your code receives the data.
+
+### Built-in variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `{now{format}}` | Current date/time with a .NET format string | `{now{yyyy-MM-dd}}` → `2026-04-15` |
+| `{tomorrow{format}}` | Tomorrow's date with a .NET format string | `{tomorrow{yyyy-MM-dd}}` → `2026-04-16` |
+| `{dir{sys}}` | Application base directory (OS path) | `C:\app\bin` |
+| `{dir{uri}}` | Application base directory (URI format) | `file:///C:/app/bin` |
+
+### Example 7 — Using date variables in task data
+
+> scheduler.xml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<tasks_list>
+  <task>
+    <sys>
+      <time>06:00</time>
+    </sys>
+    <report_date>{now{yyyy-MM-dd}}</report_date>
+    <output_path>{dir{sys}}\reports\report_{now{yyyyMMdd}}.csv</output_path>
+  </task>
+</tasks_list>
+```
+
+```csharp
+scheduler.TaskIsDue += async (object sender, HTaskEventArgs e, CancellationToken ct) =>
+{
+    Console.WriteLine($"Generating report for {e["report_date"]}");
+    Console.WriteLine($"Saving to {e["output_path"]}");
+};
+```
+
+**Output** (on 2026-04-15):
+```
+Generating report for 2026-04-15
+Saving to C:\app\bin\reports\report_20260415.csv
+```
 
 ---
-## External settings
-Documentation in progress. Stay tuned.
 
-### External settings cache
-Documentation in progress. Stay tuned.
-
----
 ## Repeat
-Documentation in progress. Stay tuned.
+
+The `<repeat>` element (inside `<sys>`) lets a task execute multiple times per trigger, once for each child element — useful for batch processing with different parameters per iteration.
 
 ### Repeat variables
-Documentation in progress. Stay tuned.
+
+During each iteration, properties from the repeat data are accessible through `{var{property_name}}` placeholders in custom tags.
+
+| Attribute | Description | Format |
+|-----------|-------------|--------|
+| `delay_interval` or `delay-interval` | Milliseconds to wait between iterations | Positive integer |
+
+### Example 8 — Processing a batch of items
+
+The content inside `<repeat>` can be XML, JSON, CSV, or pipe-separated values. Each child element (or row) becomes one iteration, with its properties accessible via `{var{property_name}}`.
+
+#### XML format (default)
+
+> scheduler.xml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<tasks_list>
+  <task>
+    <sys>
+      <interval>60000</interval>
+      <repeat delay_interval="500">
+        <user>
+          <id>1</id>
+          <name>alice</name>
+        </user>
+        <user>
+          <id>2</id>
+          <name>bob</name>
+        </user>
+        <user>
+          <id>3</id>
+          <name>charlie</name>
+        </user>
+      </repeat>
+    </sys>
+    <message>Processing user {var{name}} (ID: {var{id}})</message>
+  </task>
+</tasks_list>
+```
+
+```csharp
+scheduler.TaskIsDue += async (object sender, HTaskEventArgs e, CancellationToken ct) =>
+{
+    Console.WriteLine(e["message"]);
+};
+```
+
+**Output** (each iteration 500ms apart):
+```
+Processing user alice (ID: 1)
+Processing user bob (ID: 2)
+Processing user charlie (ID: 3)
+```
+
+#### JSON format
+
+```xml
+<repeat content_type="json" delay_interval="500">
+  [
+    {"id": 1, "name": "alice"},
+    {"id": 2, "name": "bob"},
+    {"id": 3, "name": "charlie"}
+  ]
+</repeat>
+```
+
+#### CSV format
+
+```xml
+<repeat content_type="csv" delay_interval="500">
+  id,name
+  1,alice
+  2,bob
+  3,charlie
+</repeat>
+```
+
+#### Pipe-separated format
+
+```xml
+<repeat content_type="psv" delay_interval="500">
+  id|name
+  1|alice
+  2|bob
+  3|charlie
+</repeat>
+```
+
+All four formats produce the same result — `{var{id}}` and `{var{name}}` resolve identically regardless of input format.
 
 ---
-## Cancellation Tokens and exiting gracefully
-Documentation in progress. Stay tuned.
+
+## External settings
+
+Custom tags can fetch their content from external HTTP/HTTPS URLs at runtime using the `content_type="uri"` attribute.
+
+| Attribute | Description |
+|-----------|-------------|
+| `content_type="uri"` | Fetch tag value from the URL specified in the tag text |
+| `uri_referer` | Set the HTTP Referer header on the request |
+| `uri_user_agent` | Set the HTTP User-Agent header on the request |
+
+### External settings cache
+
+To avoid fetching on every task execution, add a `content_cache` attribute:
+
+| Value | Behavior |
+|-------|----------|
+| `none` | No caching (default) |
+| `once_per_day` / `daily` | Cache until midnight |
+| Numeric (milliseconds) | Cache for the specified duration |
+
+### Example 9 — Fetching configuration from an API
+
+> scheduler.xml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<tasks_list>
+  <task>
+    <sys>
+      <interval>30000</interval>
+    </sys>
+    <config content_type="uri" content_cache="once_per_day">
+      https://api.example.com/task-config
+    </config>
+  </task>
+</tasks_list>
+```
+
+```csharp
+scheduler.TaskIsDue += async (object sender, HTaskEventArgs e, CancellationToken ct) =>
+{
+    // e["config"] contains the HTTP response body, cached for the day
+    Console.WriteLine($"Config: {e["config"]}");
+};
+```
+
+### Using URI to control scheduling — skip holidays
+
+The `content_type="uri"` feature isn't limited to custom tags — it also works on scheduling rules inside `<sys>`. A practical use case is the `<enabled>` tag: you can point it at an API that returns whether today is a business day, and the engine will dynamically enable or disable the task.
+
+The engine checks whether the API response **contains** the word `true` (case-insensitive). Any response format works — JSON, XML, plain text — as long as "true" appears somewhere in the response body.
+
+### Example — Skip tasks on holidays
+
+> scheduler.xml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<tasks_list>
+  <task>
+    <sys>
+      <time>09:00</time>
+      <interval>60000</interval>
+      <dow>Monday,Tuesday,Wednesday,Thursday,Friday</dow>
+      <enabled content_type="uri">https://api.example.com/is-business-day?date={now{yyyy-MM-dd}}</enabled>
+    </sys>
+    <name>business hours task</name>
+    <message>Running business logic...</message>
+  </task>
+</tasks_list>
+```
+
+If the API returns `{"is_business_day": true}` or simply `true`, the task runs. On holidays, the API returns something like `{"is_business_day": false}` and the task is skipped for the day.
+
+Note how `{now{yyyy-MM-dd}}` passes today's date to the API — built-in variables are resolved before the URI is fetched.
+
+However, in the example above, the engine calls the API on **every** scheduling tick (default: every second). Since the holiday status doesn't change throughout the day, we can add `content_cache="once_per_day"` to call the API only once and cache the result until midnight:
+
+```xml
+<enabled content_type="uri" content_cache="once_per_day">https://api.example.com/is-business-day?date={now{yyyy-MM-dd}}</enabled>
+```
+
+This way, the first check of the day calls the API and caches the response. Every subsequent check reuses the cached result — keeping the scheduling efficient without unnecessary API calls.
+
+> **Fail-secure behavior:** If the API call fails (network error, timeout, etc.), the engine **does not execute the task** and **does not cache the failure**. On the next tick it simply retries the call. This means a temporary API outage won't accidentally run — or permanently skip — the task. Execution only proceeds once a definitive response is received.
 
 ---
-## Miscellaneous
-Documentation in progress. Stay tuned.
+
+## Content type processors
+
+Custom tags support a `content_type` attribute for parsing structured data into dynamic objects, accessible via `GetModel()` and `GetModels()`.
+
+| `content_type` | Description |
+|-----------------|-------------|
+| `uri` | Fetch content from URL |
+| `json` | Parse tag text as JSON |
+| `xml` | Parse tag text as XML |
+| `csv` | Parse tag text as comma-separated values |
+| `psv` | Parse tag text as pipe-separated values |
+
+### Chaining content types
+
+Content types can be **chained** using `>`, `->`, `=>`, or `,` as separators. Processors execute left to right, each feeding its output to the next.
+
+For example, `content_type="uri > json"` first fetches from the URL, then parses the response as JSON.
+
+### Example 10 — Fetching and parsing a repeat list from an API
+
+This combines external URI fetching with repeat iteration. The `<repeat>` element fetches a JSON array from an API, and each item becomes an iteration:
+
+> scheduler.xml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<tasks_list>
+  <task>
+    <sys>
+      <interval>60000</interval>
+      <repeat content_type="uri > json" delay_interval="500">
+        https://api.example.com/users
+      </repeat>
+    </sys>
+    <message>Processing user {var{name}} (ID: {var{id}})</message>
+  </task>
+</tasks_list>
+```
+
+If the API returns:
+```json
+[
+  {"id": 1, "name": "alice"},
+  {"id": 2, "name": "bob"},
+  {"id": 3, "name": "charlie"}
+]
+```
+
+**Output:**
+```
+Processing user alice (ID: 1)
+Processing user bob (ID: 2)
+Processing user charlie (ID: 3)
+```
+
+Other chaining combinations work the same way: `uri > csv`, `uri > xml`, `uri > psv`, etc.
+
+### File URIs
+
+The `uri` content type supports `file://` URIs in addition to `http://` and `https://`. This lets you load content from local files:
+
+```xml
+<repeat content_type="uri > csv" delay_interval="500">
+  file:///C:/data/users.csv
+</repeat>
+```
+
+You can also use the built-in `{dir{uri}}` variable to reference files relative to the application directory:
+
+```xml
+<repeat content_type="uri > csv" delay_interval="500">
+  {dir{uri}}/data/users.csv
+</repeat>
+```
+
+### Custom placeholder markers
+
+By default, variable placeholders use `{{` and `}}`. You can override this with attributes on any custom tag:
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `open-marker` | `{{` | Opening placeholder marker |
+| `close-marker` | `}}` | Closing placeholder marker |
+| `null-value` | (empty) | Value to substitute when a variable is null |
+
+### Example — Custom markers and null handling
+
+This is useful when tag content conflicts with the default `{{` / `}}` markers (e.g., JSON templates), or when you want missing variables to show a fallback value instead of being blank:
+
+> scheduler.xml
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<tasks_list>
+  <task>
+    <sys>
+      <interval>60000</interval>
+      <repeat content_type="json">
+        [
+          {"name": "alice", "email": "alice@example.com"},
+          {"name": "bob", "email": null}
+        ]
+      </repeat>
+    </sys>
+    <sql open-marker="[%" close-marker="%]" null-value="N/A">
+      INSERT INTO users (name, email) VALUES ('[%var{name}%]', '[%var{email}%]')
+    </sql>
+  </task>
+</tasks_list>
+```
+
+```csharp
+scheduler.TaskIsDue += async (object sender, HTaskEventArgs e, CancellationToken ct) =>
+{
+    Console.WriteLine(e["sql"]);
+};
+```
+
+**Output:**
+```
+INSERT INTO users (name, email) VALUES ('alice', 'alice@example.com')
+INSERT INTO users (name, email) VALUES ('bob', 'N/A')
+```
 
 ---
-## Putting it all together
-Documentation in progress. Stay tuned.
+
+## Error handling
+
+The scheduler exposes three async events:
+
+| Event | EventArgs Type | When |
+|-------|---------------|------|
+| `TaskIsDue` | `HTaskEventArgs` | A task meets all scheduling criteria |
+| `TaskExecutionError` | `HTaskExecutionErrorEventArgs` | A task throws an exception (when retry is configured) |
+| `TaskLoadingError` | `HErrorEventArgs` | XML config file fails to parse or load |
+
+### Example 11 — Handling loading and execution errors
+
+```csharp
+scheduler.TaskLoadingError += async (object sender, HErrorEventArgs e, CancellationToken ct) =>
+{
+    Console.WriteLine($"Config error: {e.Exception.Message}");
+};
+
+scheduler.TaskExecutionError += async (object sender, HTaskExecutionErrorEventArgs e, CancellationToken ct) =>
+{
+    Console.WriteLine($"Task failed: {e.Exception.Message}");
+    // Access the task that failed:
+    Console.WriteLine($"Task name: {e.EventArgs["name"]}");
+};
+```
 
 ---
-## Future roadmap
-Documentation in progress. Stay tuned.
+
+## Cancellation and graceful shutdown
+
+`HTaskScheduler` implements `IDisposable`. The `CancellationToken` passed to your event handler is linked to the scheduler's lifecycle — use it for cooperative cancellation.
+
+### Example 12 — Graceful shutdown with cancellation
+
+```csharp
+using Com.H.Threading.Scheduler;
+
+var configPath = Path.Combine(AppContext.BaseDirectory, "scheduler.xml");
+if (!File.Exists(configPath)) throw new FileNotFoundException(configPath);
+
+using var scheduler = new HTaskScheduler(configPath);
+
+scheduler.TaskIsDue += async (object sender, HTaskEventArgs e, CancellationToken ct) =>
+{
+    // Use the cancellation token in long-running operations
+    using var http = new HttpClient();
+    var data = await http.GetStringAsync(e["api_url"], ct);
+    
+    // Check cancellation between steps
+    ct.ThrowIfCancellationRequested();
+    
+    await File.WriteAllTextAsync(e["output_path"], data, ct);
+};
+
+// Wire up ctrl+c for graceful shutdown
+using var cts = new CancellationTokenSource();
+Console.CancelKeyPress += (s, e) => { e.Cancel = true; cts.Cancel(); };
+
+await scheduler.StartAsync(cts.Token);
+Console.WriteLine("Scheduler stopped.");
+```
+
+---
+
+## Multi-file configuration
+
+If you pass a **directory path** to the `HTaskScheduler` constructor instead of a file path, it loads all `*.xml` files in that directory. Files are watched for changes at runtime — modified files are automatically reloaded without restarting the application.
+
+```csharp
+// Load all XML files from the "config" directory
+var configDir = Path.Combine(AppContext.BaseDirectory, "config");
+var scheduler = new HTaskScheduler(configDir);
+```
+
+---
+
+## Custom task sources
+
+For non-XML sources (databases, JSON files, APIs, etc.), implement the `IHTaskCollection` and `IHTaskTimeLogger` interfaces and pass them to the overloaded constructor:
+
+```csharp
+var tasks = new MyDatabaseTaskCollection();
+var logger = new MyDatabaseTimeLogger();
+var scheduler = new HTaskScheduler(tasks, logger);
+```
+
+> **Note:** When `IHTaskTimeLogger` is omitted, logging defaults to in-memory only. Task execution history is lost on restart, so all eligible tasks will re-run.
